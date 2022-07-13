@@ -1,0 +1,18 @@
+{
+	"time":30,
+	"devices":[
+		{
+			"name":"h2",
+			"cmds":["ITGRecv &", "tshark -i eth0 -f \"port 50000\" -a duration:30 > results/packets/original_pkts.csv &"]
+		},
+		{
+			"name":"h5",
+			"cmds":["./python_scripts/communication/receive.py -f results/packets/results_pkts.txt -t 30 &"]
+		},
+		{
+			"name":"h1",
+			"cmds":["ITGSend flows/constant &"]
+		}
+	]
+
+}
