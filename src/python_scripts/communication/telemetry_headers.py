@@ -19,7 +19,8 @@ class Telemetry_Data(Packet):
                    BitField("sw_id", 0, 7),
                    IntField("flow_id", 0),
                    IntField("amt_bytes", 0),
-                   BitField("time", 0, 64),]
+                   BitField("last_time", 0, 48),
+                   BitField("curr_time", 0, 48)]
 
 
 bind_layers(Ether, Telemetry, type=TYPE_Telemetry)
