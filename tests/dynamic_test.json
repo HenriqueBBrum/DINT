@@ -1,0 +1,20 @@
+{
+	"time":65,
+	"devices":[
+		{
+			"name":"h2", 
+			"cmds":["ITGRecv &", "rm results/experiments/dynamic_real_output.pcapng",
+			 "touch results/experiments/dynamic_real_output.pcapng", "chmod o=rw results/experiments/dynamic_real_output.pcapng",
+				"tshark -i eth0 -w results/experiments/dynamic_real_output.pcapng -f \"port 50000\" -a duration:65 &"]
+		},
+		{
+			"name":"h5",
+			"cmds":["./python_scripts/communication/receive.py -o results/experiments/dynamic_telemetry_pkts.txt -t 65 &"]
+		},
+		{
+			"name":"h1",
+			"cmds":["ITGSend flows/constant &"]
+		}
+	]
+
+}
