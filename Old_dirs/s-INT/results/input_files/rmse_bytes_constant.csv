@@ -1,0 +1,2 @@
+rmse,byte_count,packet_count,min_telemetry_push_time,experiment_time
+0.025062812490435096,315,21,1.0,100
