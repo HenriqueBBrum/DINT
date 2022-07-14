@@ -10,7 +10,7 @@
 #define MAX_HOPS 8 // Maximum number of hops of a telemetry packet
 
 #define L2_HEADERS_SZ 44 //  Ethernet (40) +  Telemtry (4) + IP Byte size
-#define TEL_DATA_SZ 17 // Size (B) of each tel_data header
+#define TEL_DATA_SZ 21 // Size (B) of each tel_data header
 #define UDP_LEN 8 // Size (B) of a UDP header
 
 
@@ -55,7 +55,8 @@ header telemetry_data_t{
 
     // monitoring values
     bit<32> amt_bytes;
-    bit<64> time;
+    bit<48> last_time;
+    bit<48> curr_time;
 }
 
 // IPv4 protocol header

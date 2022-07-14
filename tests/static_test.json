@@ -1,17 +1,19 @@
 {
-	"time":30,
+	"time":65,
 	"devices":[
 		{
-			"name":"h2",
-			"cmds":["ITGRecv &", "tshark -i eth0 -f \"port 50000\" -a duration:30 > results/packets/original_pkts.csv &"]
+			"name":"h2", 
+			"cmds":["ITGRecv &", "rm results/experiments/static_real_output.pcapng",
+			 "touch results/experiments/static_real_output.pcapng", "chmod o=rw results/experiments/static_real_output.pcapng",
+				"tshark -i eth0 -w results/experiments/static_real_output.pcapng -f \"port 50000\" -a duration:65 &"]
 		},
 		{
 			"name":"h5",
-			"cmds":["./python_scripts/communication/receive.py -f results/packets/results_pkts.txt -t 30 &"]
+			"cmds":["./python_scripts/communication/receive.py -o results/experiments/static_telemetry_pkts.txt -t 65 &"]
 		},
 		{
 			"name":"h1",
-			"cmds":["ITGSend flows/constant &"]
+			"cmds":["ITGSend flows/pyramid &"]
 		}
 	]
 

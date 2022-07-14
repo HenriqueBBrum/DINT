@@ -17,6 +17,7 @@ const bit<8> beta = 1; //divisor por shift logo é o mesmo que 2
 
 const bit<64> div = 0x1999999A; /// used to divide a number by 10
 const bit<64> div_100 = 0x28F5C29;
+
 const bit<32> mean_n = 8;
 const bit<8> div_shift = 3;
 const bit<32> base_delta = 300;
@@ -281,7 +282,9 @@ void insert_telemetry(inout headers hdr, inout metadata meta, inout standard_met
                 hdr.tel_data[0].sw_id = meta.sw_id;
                 hdr.tel_data[0].flow_id = meta.flow_id;
                 hdr.tel_data[0].amt_bytes = tel_amt_bytes;
-                hdr.tel_data[0].time = (bit<64>)(now - previous_insertion);
+                hdr.tel_data[0].last_time = previous_insertion;
+                hdr.tel_data[0].curr_time = now; // bit<64>)(now - previous_insertion);
+
 
                 telemetry_byte_cnt_reg.write(meta.flow_id, 0);
                 previous_insertion_reg.write(meta.flow_id, now);

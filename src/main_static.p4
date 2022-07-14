@@ -131,7 +131,6 @@ control MyIngress(inout headers hdr,
 ****************  E G R E S S   P R O C E S S I N G   *******************
 *************************************************************************/
 
-
 void insert_telemetry(inout headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata,
                         in bit<32> pres_amt_bytes){
 
@@ -168,7 +167,9 @@ void insert_telemetry(inout headers hdr, inout metadata meta, inout standard_met
                 hdr.tel_data[0].sw_id = meta.sw_id;
                 hdr.tel_data[0].flow_id = meta.flow_id;
                 hdr.tel_data[0].amt_bytes = pres_amt_bytes;
-                hdr.tel_data[0].time = (bit<64>)(now - previous_insertion);
+                hdr.tel_data[0].last_time = previous_insertion;
+                hdr.tel_data[0].curr_time = now; // bit<64>)(now - previous_insertion);
+
 
                 pres_byte_cnt_reg.write(meta.flow_id, 0);
                 past_byte_cnt_reg.write(meta.flow_id, 0);
