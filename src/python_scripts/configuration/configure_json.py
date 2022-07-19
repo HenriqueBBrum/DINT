@@ -8,7 +8,7 @@ import json
 
 def parse_args():
     parser = argparse.ArgumentParser(description=f"Configure control plane switch json")
-    parser.add_argument("-n", "--p4_file", help="P4 file to be executed", required=True, type=str)
+    parser.add_argument("-p", "--p4_file", help="P4 file to be executed", required=True, type=str)
     parser.add_argument("-t", "--topology_file", help="Topology file", required=True, type=str)
 
     return vars(parser.parse_args())
@@ -20,7 +20,7 @@ def main(p4_file_name, topology_file):
 
     p4_file_name = p4_file_name.split('.')[0]
 
-    # For each swithc runtime json, update json with 'p4_file_name'
+    # For each switch runtime json, update json with 'p4_file_name'
     for file in glob.glob('s*-runtime.json'):
         with open(file, 'r') as file_:
             json_object = json.load(file_)

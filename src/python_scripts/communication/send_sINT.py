@@ -13,13 +13,6 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from telemetry_headers import *
 
-def parse_args():
-    parser = argparse.ArgumentParser(description=f"Send packets to a certain ip and port")
-    parser.add_argument("-f", "--frequency_file", help="Frequency file", required=True, type=str)
-    parser.add_argument("-a", "--dst_ip", help="Ip dest", required=True, type=str)
-    parser.add_argument("-d", "--dport", help="Udp dest port", required=True, type=int) # cpu, io
-
-    return vars(parser.parse_args())
 
 
 # Checks if a file has been modified. If it has, update frequency dictionary
@@ -77,6 +70,15 @@ def main(frequency_file, dst_ip, dport):
 
         except KeyboardInterrupt:
             sys.exit()
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description=f"Send packets to a certain ip and port")
+    parser.add_argument("-f", "--frequency_file", help="Frequency input file", required=True, type=str)
+    parser.add_argument("-a", "--dst_ip", help="Ip dest", required=True, type=str)
+    parser.add_argument("-d", "--dport", help="Udp dest port", required=True, type=int) # cpu, io
+
+    return vars(parser.parse_args())
 
 if __name__ == '__main__':
     args = parse_args()
