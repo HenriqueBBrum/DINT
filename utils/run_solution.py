@@ -362,20 +362,20 @@ class P4_Simulation:
             print(' for example run:  cat %s/s1-p4runtime-requests.txt' % self.log_dir)
             print('')
 
-        CLI(self.net)
+        # CLI(self.net)
 
-        # print(self.test)
+        print(self.test)
 
-        # print('Starting static test')
+        print('Starting static test')
 
-        # for device in self.test['devices']:
-        #     dev_instance = self.net.get(device.get('name'))
-        #     print(device.get('name'))
-        #     for cmd in device['cmds']:
-        #         dev_instance.cmd(cmd)
-        #         print(cmd)
+        for device in self.test['devices']:
+            dev_instance = self.net.get(device.get('name'))
+            print(device.get('name'))
+            for cmd in device['cmds']:
+                dev_instance.cmd(cmd)
+                print(cmd)
 
-        # sleep(self.test['time'])
+        sleep(self.test['time'])
         
 
 

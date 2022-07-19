@@ -122,8 +122,8 @@ def main(frequency_file, tel_output_file, timeout):
 def parse_args():
     parser = argparse.ArgumentParser(description=f"Receive packets and save them to a file")
 
-    parser.add_argument("-f", "--frequency_file", help="Output file", required=True, type=str)
-    parser.add_argument("-o", "--tel_output_file", help="Output file", required=True, type=str)
+    parser.add_argument("-f", "--frequency_file", help="Frequency output file", required=True, type=str)
+    parser.add_argument("-o", "--tel_output_file", help="Telemetry output file", required=True, type=str)
     parser.add_argument("-t", "--timeout", help="Sniff capture time", required=True, type=float)
 
   
