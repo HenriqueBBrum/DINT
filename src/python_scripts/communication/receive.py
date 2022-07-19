@@ -44,7 +44,7 @@ def handle_pkt(pkt, tel_file):
 
 def parse_args():
     parser = argparse.ArgumentParser(description=f"Receive packets and save them to a file")
-    parser.add_argument("-o", "--tel_output_file", help="Output file", required=True, type=str)
+    parser.add_argument("-o", "--tel_output_file", help="Telemetry output file", required=True, type=str)
     parser.add_argument("-t", "--timeout", help="Sniff capture time", required=True, type=float)
 
   
@@ -58,7 +58,7 @@ def main(tel_output_file, timeout):
     sniff(iface = iface,
           prn = lambda x: handle_pkt(x, tel_file), timeout = timeout)
 
-    file.close()
+    tel_file.close()
 
 if __name__ == '__main__':
 

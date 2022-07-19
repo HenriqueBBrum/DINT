@@ -1,0 +1,5 @@
+traffic_shape,sw_type,rmse,telemetry_byte_count,packet_count,min_telemetry_push_time,experiment_time
+no_type,dynamic,0.05031209480502679,874,25,1.0,60.0
+no_type,static,0.14856432207401665,722,21,1.0,60.0
+no_type,dynamic,0.08042066503075311,1178,33,1.0,60.0
+no_type,static,0.04718064697277148,2242,61,1.0,60.0

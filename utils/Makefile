@@ -41,10 +41,12 @@ run_args += -b $(BMV2_SWITCH_EXE)
 endif
 
 
+
+
 all: run
 
 run: build
-	python3 $(CONFIGURE_SCRIPT) -n $(P4_SRC) -t $(TOPO)
+	python3 $(CONFIGURE_SCRIPT) -p $(P4_SRC) -t $(TOPO)
 	sudo python3 $(RUN_SCRIPT) -t $(TOPO) -e $(TEST_JSON) $(run_args)
 
 stop:
