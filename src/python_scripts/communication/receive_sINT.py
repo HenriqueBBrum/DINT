@@ -84,7 +84,10 @@ def expand(x):
         yield x
 
 def handle_pkt(pkt, frequency_file, tel_file):
+    #file = open("log.txt", "w")
+
     if Telemetry in pkt:
+
         data_layers = [l for l in expand(pkt) if(l.name=='Telemetry_Data' or l.name=='Telemetry')]
 
         print(f"Telemetry header. hop_count:{data_layers[0].hop_cnt}")
@@ -102,11 +105,6 @@ def handle_pkt(pkt, frequency_file, tel_file):
 
 def main(frequency_file, tel_output_file, timeout):
     global frequency_dict
-
-    # frequency_file = 'input_files/frequency_table.json'
-
-    # with open(output_file, 'r') as f_file:
-    #     frequency_dict = json.load(f_file)
 
     tel_file = open(tel_output_file, "w")
 
