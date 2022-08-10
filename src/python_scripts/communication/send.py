@@ -44,33 +44,14 @@ def main(args):
     count = 0
     string_val = "x" * int(args['packet_size'])
 
-    telemetry_pkt = Ether(dst='ff:ff:ff:ff:ff:ff', src=get_if_hwaddr('eth0')) / \
-                Telemetry(hop_cnt=0)/IP(dst=args['dst_ip'])/UDP(sport=args['dport'],dport=args['dport'])/Raw(load=string_val)
-
     normal_pkt = Ether(dst='ff:ff:ff:ff:ff:ff', src=get_if_hwaddr('eth0')) / \
                 IP(dst=args['dst_ip'])/UDP(sport=args['dport'],dport=args['dport'])/Raw(load=string_val)
-
-    flow_id = "1"   # 5-tuple hash
-
-    try:
-        with open(args['frequency_file'],"r") as f_file:
-            frequency_dict = json.load(f_file)
-            last_modified = os.path.getmtime(args['frequency_file'])
-    except Exception as e:
-        print(e)
-
+   
     start = time.time()
     while time.time() - start < args['timeout']:
         try:
-            frequency_dict = check_for_file_change(args['frequency_file'], last_modified, frequency_dict)
-            if(flow_id in frequency_dict):
-                count = send_telemtry_or_normal_pkt(count, frequency_dict.get(flow_id), telemetry_pkt, normal_pkt)
-            else:
-                print("Sent telemetry packet")
-                sendp(telemetry_pkt, iface='eth0', verbose=0)
-
+            sendp(normal_pkt, iface='eth0', verbose=0)
             time.sleep(args['interval'])
-
         except KeyboardInterrupt:
             sys.exit()
 
@@ -78,11 +59,10 @@ def main(args):
 
 def parse_args():
     parser = argparse.ArgumentParser(description=f"Send packets to a certain ip and port")
-    parser.add_argument("-f", "--frequency_file", help="Frequency input file", required=True, type=str)
     parser.add_argument("-a", "--dst_ip", help="Ip dest", required=True, type=str)
     parser.add_argument("-d", "--dport", help="Udp dest port", required=True, type=int) 
     parser.add_argument("-i", "--interval", help="Interval between packets", required=True, type=float)
-    parser.add_argument("-s", "--packet_size", help="Packet size", required=True, type=float)
+    parser.add_argument("-s", "--packet_size", help="Packet size", required=True, type=int)
     parser.add_argument("-t", "--timeout", help="Packet dispatch period", required=True, type=float)
 
 

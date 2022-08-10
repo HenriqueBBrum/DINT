@@ -366,7 +366,7 @@ class P4_Simulation:
 
         print(self.test)
 
-        print('Starting static test')
+        print('Starting test')
 
         for device in self.test['devices']:
             dev_instance = self.net.get(device.get('name'))
@@ -390,7 +390,7 @@ def get_args():
                         type=str, required=False, default='./topology.json')
 
     parser.add_argument('-e', '--test', help='Path to a json test',
-                        type=str, required=False)
+                        type=str, required=False, default='./test.json')
     parser.add_argument('-l', '--log-dir', type=str, required=False, default=default_logs)
     parser.add_argument('-p', '--pcap-dir', type=str, required=False, default=default_pcaps)
     parser.add_argument('-j', '--switch_json', type=str, required=False)

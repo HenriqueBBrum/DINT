@@ -72,34 +72,36 @@ def telemetry_traffic_data(telemetry_file, switch_id, unit):
             else:
                 if(cols[0]==switch_id):
                     time_window_s = (int(cols[-1],10)-int(cols[-2],10))/(microseg)
+                    time_window_s = 1 if time_window_s == 0 else time_window_s
                     x.append(prev_time+time_window_s)
                     y.append((float(cols[2])/time_window_s)/metric_unit[unit])
+                    
 
                     prev_time+=time_window_s
 
                 hop_cnt-=1
 
+    print(len(x), len(y))
     return x, y, telemetry_byte_count
 
 
-# Saves information about 
 def save_rmse_and_telemetry_byte_count(args, sw_type, real_y_expanded, telemetry_y_expanded, telemetry_byte_count, telemetry_pkts_count):
     rmse = math.sqrt(np.square(np.subtract(real_y_expanded, telemetry_y_expanded)).mean())
     max_ = max(sorted(set(real_y_expanded))[-1], sorted(set(telemetry_y_expanded))[-1])
 
-    filepath = args['output_folder']+args['traffic_shape']+".csv"
+    filepath = args['rmse_output_folder']+args['traffic_shape']+".csv"
     file_exists = os.path.isfile(filepath)
     y_set = sorted(set(real_y_expanded))
     with open(filepath, "a") as csvfile:
-        headers = ['traffic_shape', 'sw_type', 'rmse', 'telemetry_byte_count', 'packet_count', 'min_telemetry_push_time', 'experiment_time']
+        headers = ['sw_type', 'sw_id', 'min_telemetry_push_time', 'experiment_time', 'packet_count', 'rmse', 'telemetry_byte_count']
         writer = csv.DictWriter(csvfile, delimiter=',', lineterminator='\n',fieldnames=headers)
 
         if not file_exists:
             writer.writeheader()  # file doesn't exist yet, write a header
 
-        writer.writerow({'traffic_shape': args['traffic_shape'], 'sw_type': sw_type, 'rmse': rmse/(max_-sorted(set(real_y_expanded))[0]), 
-                        'telemetry_byte_count': telemetry_byte_count, 'packet_count': telemetry_pkts_count,
-                        'min_telemetry_push_time': args['min_telemetry_push_time'], 'experiment_time': args['experiment_duration']})
+        writer.writerow({'sw_type': sw_type, 'sw_id':args['switch_id'], 'min_telemetry_push_time': args['min_telemetry_push_time'], 
+                    'experiment_time': args['experiment_duration'], ' packet_count': telemetry_pkts_count, 
+                        'telemetry_byte_count': telemetry_byte_count, 'rmse': rmse/(max_-sorted(set(real_y_expanded))[0])})
 
 
 def plot_line_graph(args, sw_type, real_data, telemetry_data):
@@ -138,9 +140,8 @@ def plot_line_graph(args, sw_type, real_data, telemetry_data):
     plt.ylabel("link utilization("+args['unit'].upper()+"B/secs)");
     plt.title('Real link X Telemetry link (min_telemetry_push_time = '+str(args['min_telemetry_push_time'])+' sec)')
     plt.gca().legend()
-    plot1.savefig(args['output_folder']+args['traffic_shape']+'_Real_X_Telemetry_'+sw_type+'_sw'+args['switch_id']+'.png')
+    plot1.savefig(args['graphs_output_folder']+args['traffic_shape']+'_Real_X_Telemetry_'+sw_type+'_sw'+args['switch_id']+'.png')
     plot1.clf() 
-    # plt.show()
 
     return real_y_expanded, telemetry_y_expanded
 
@@ -149,7 +150,8 @@ def parse_args():
 
     parser = argparse.ArgumentParser(description=f"Send packets to a certain ip and port")
     parser.add_argument('-i', '--file_folder', type=str, help="Folder with input files")
-    parser.add_argument('-o', '--output_folder', type=str, help="Folder for output files")
+    parser.add_argument('-g', '--graphs_output_folder', type=str, help="Folder for output files")
+    parser.add_argument('-r', '--rmse_output_folder', type=str, help="Folder for output files")
     parser.add_argument('-d', '--experiment_duration', type=float, help="Duration of the experiment'")
     parser.add_argument('-m', '--min_telemetry_push_time', type=float, help="Minimum polling time in seconds used in the 'p4' files")
     parser.add_argument('-s', '--switch_id', type=str, help="Switch id to be compared")
@@ -180,7 +182,6 @@ def main():
     for f in telemetry_files:
         telemetry_x, telemetry_y, telemetry_byte_count = telemetry_traffic_data(f, args['switch_id'], args['unit'])
         sw_type = f.split("/")[-1].split(".")[0].split("_")[0]
-
         real_traffic_file = glob.glob(args['file_folder']+sw_type+"_real*.csv")[0]
         real_x, real_y = real_traffic_data(real_traffic_file, args['unit'])
 
@@ -190,7 +191,7 @@ def main():
             telemetry_x.append(real_x[-1])
             telemetry_y.append(telemetry_y[-1])
 
-
+        print(f, sw_type)
         real_y_expanded, telemetry_y_expanded = plot_line_graph(args, sw_type, (real_x, real_y), telemetry_data.get(sw_type))
 
         save_rmse_and_telemetry_byte_count(args, sw_type, real_y_expanded, telemetry_y_expanded, telemetry_byte_count, len(telemetry_x))
