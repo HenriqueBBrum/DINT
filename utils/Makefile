@@ -40,6 +40,9 @@ ifdef BMV2_SWITCH_EXE
 run_args += -b $(BMV2_SWITCH_EXE)
 endif
 
+ifdef TEST_JSON
+run_args += -e $(TEST_JSON)
+endif
 
 
 
@@ -47,7 +50,7 @@ all: run
 
 run: build
 	python3 $(CONFIGURE_SCRIPT) -p $(P4_SRC) -t $(TOPO)
-	sudo python3 $(RUN_SCRIPT) -t $(TOPO) -e $(TEST_JSON) $(run_args)
+	sudo python3 $(RUN_SCRIPT) -t $(TOPO) $(run_args)
 
 stop:
 	sudo mn -c
