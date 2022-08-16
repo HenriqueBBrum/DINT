@@ -16,8 +16,7 @@ make P4_SRC=main_sINT.p4 TEST_JSON=../testing/test_config_files/sINT.json
 
 
 cd ../testing/python_scripts
-python3 line_graph.py -i ../results/pkts_output/ -g ../results/graphs_output/ -r ../results/rmse_graphs_input/ -d 30 -m 1 -s 1
+python3 line_graph.py -i ../results/pkts_output/ -g ../results/graphs_output/ -r ../results/rmse_graphs_input/ -d 60 -m 1 -s 1
 
-# python3 rmse_graph_plotter -i ../results/graphs_output/
+python3 rmse_graph_plotter.py -i ../results/rmse_graphs_input/ -g ../results/graphs_output/ 
 
-# python3 
