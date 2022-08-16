@@ -1,0 +1,5 @@
+sw_type,sw_id,min_telemetry_push_time,experiment_time,packet_count,rmse,telemetry_byte_count
+sINT,1,1.0,30.0,4,0.5646412084300795,76
+static,1,1.0,30.0,30,0.26429066529901346,1064
+dynamicV2,1,1.0,30.0,13,0.3519132857241632,418
+dynamicV1,1,1.0,30.0,12,0.23572229114777818,363

@@ -1,19 +1,19 @@
 {
-	"time":35,
+	"time":65,
 	"devices":[
 		{
 			"name":"h2", 
 			"cmds":["rm ../testing/results/pkts_output/dynamicV1_real_output.pcapng",
 			 "touch ../testing/results/pkts_output/dynamicV1_real_output.pcapng", "chmod o=rw ../testing/results/pkts_output/dynamicV1_real_output.pcapng",
-				"tshark -i eth0 -w ../testing/results/pkts_output/dynamicV1_real_output.pcapng -f \"port 50000\" -a duration:35 &"]
+				"tshark -i eth0 -w ../testing/results/pkts_output/dynamicV1_real_output.pcapng -f \"port 50000\" -a duration:65 &"]
 		},
 		{
 			"name":"h5",
-			"cmds":["./python_scripts/communication/receive.py -o ../testing/results/pkts_output/dynamicV1_telemetry_pkts.txt -t 35 &"]
+			"cmds":["./python_scripts/communication/receive.py -o ../testing/results/pkts_output/dynamicV1_telemetry_pkts.txt -t 65 &"]
 		},
 		{
 			"name":"h1",
-			"cmds":["./python_scripts/communication/send.py -a 10.0.2.2 -d 50000 -i 0.1 -s 500 -t 30  &"]
+			"cmds":["./python_scripts/communication/send.py -a 10.0.2.2 -d 50000 -i 0.1 -s 1000 -t 60  &"]
 		}
 	]
 
