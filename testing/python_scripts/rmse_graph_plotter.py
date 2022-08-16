@@ -127,7 +127,7 @@ def plot_graphs(output_folder, traffic_type, sw_id, total_time, data, unit):
 
     byte_cnt_title = 'Telemetry Overhead - '+'SW'+sw_id+' | '+total_time+'s'
     byte_cnt_filepath = output_folder+traffic_type+'s_Tel_Overhead_'+sw_id+'_'+total_time.split('.')[0]+'s.png'
-    plot_bar_graph(byte_cnt_filepath, byte_cnt_title, 'Bytes ('+unit.upper()+'B)', 'tab:green', 100, *crete_bar_graph_rects(data, 2, metric_unit[unit]))
+    plot_bar_graph(byte_cnt_filepath, byte_cnt_title, 'Bytes ('+unit.upper()+')', 'tab:green', 200, *crete_bar_graph_rects(data, 2, metric_unit[unit]))
 
   
 

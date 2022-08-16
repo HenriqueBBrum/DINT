@@ -234,7 +234,7 @@ control MyEgress(inout headers hdr,
                         truncate(truncate_sz); // Remove user data from clone packet
                         hdr.ipv4.total_len = 28;
                         hdr.udp.len = 8;
-                    }else if(standard_metadata.instance_type == PKT_INSTANCE_TYPE_NORMAL && hdr.telemetry.isValid()){
+                    }else if(standard_metadata.instance_type == PKT_INSTANCE_TYPE_NORMAL){
                         // If switch is a transit switch and has telemetry, add tel_data
                         // If its a sink switch, remove telemetry headers
                         if(meta.cloned == 0)

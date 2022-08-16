@@ -30,7 +30,7 @@ def send_telemtry_or_normal_pkt(count, frequency, telemetry_pkt, normal_pkt):
     count+=1
     period = (1/frequency if frequency <= 1 and frequency>0 else 1)
     if(count>=period and frequency>0):
-        print("Sent telemetry flow exists")
+        print("Sent telemetry flow exists", frequency)
         sendp(telemetry_pkt, iface='eth0', verbose=0)
         count = 0
     else:
@@ -52,12 +52,13 @@ def main(args):
 
     flow_id = "1"   # 5-tuple hash
 
-    try:
-        with open(args['frequency_file'],"r") as f_file:
+    with open(args['frequency_file'],"r") as f_file:
+        try:
             frequency_dict = json.load(f_file)
-            last_modified = os.path.getmtime(args['frequency_file'])
-    except Exception as e:
-        print(e)
+        except:
+            frequency_dict = {}
+        last_modified = os.path.getmtime(args['frequency_file'])
+
 
     start = time.time()
     while time.time() - start < args['timeout']:
