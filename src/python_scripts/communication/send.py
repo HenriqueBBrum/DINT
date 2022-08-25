@@ -14,47 +14,26 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from telemetry_headers import *
 
 
-
-# Checks if a file has been modified. If it has, update frequency dictionary
-def check_for_file_change(frequency_file, last_modified, frequency_dict):
-    modified = os.path.getmtime(frequency_file)
-    if(modified != last_modified):
-        with open(frequency_file,"r") as f_file:
-            frequency_dict = json.load(f_file)
-        last_modified = modified
-
-    return frequency_dict
-
-# Sends either a telemetry packet or a normal packet according to frequency
-def send_telemtry_or_normal_pkt(count, frequency, telemetry_pkt, normal_pkt):
-    count+=1
-    period = (1/frequency if frequency <= 1 and frequency>0 else 1)
-    if(count>=period and frequency>0):
-        print("Sent telemetry flow exists")
-        sendp(telemetry_pkt, iface='eth0', verbose=0)
-        count = 0
-    else:
-        print("Sent normal packet flow exists")
-        sendp(normal_pkt, iface='eth0', verbose=0)
-
-    return count
-
-
 def main(args):
     count = 0
     string_val = "x" * int(args['packet_size'])
 
-    normal_pkt = Ether(dst='ff:ff:ff:ff:ff:ff', src=get_if_hwaddr('eth0')) / \
+    pkt = Ether(dst='ff:ff:ff:ff:ff:ff', src=get_if_hwaddr('eth0')) / \
                 IP(dst=args['dst_ip'])/UDP(sport=args['dport'],dport=args['dport'])/Raw(load=string_val)
    
+    #print("Theoretical pkts count: ",args['timeout']/args['interval'])
+
+    s = conf.L2socket(iface='eth0')
     start = time.time()
     while time.time() - start < args['timeout']:
         try:
-            sendp(normal_pkt, iface='eth0', verbose=0)
+            s.send(pkt)
             time.sleep(args['interval'])
+
         except KeyboardInterrupt:
             sys.exit()
 
+    print("Real pkts count: ", count)
 
 
 def parse_args():

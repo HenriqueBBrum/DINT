@@ -19,7 +19,7 @@ previous_tel_data = []
 timer = 0
 
 timeout = 2
-min_frequency = 0.1
+min_frequency = 0.002
 
 type = 'link'
 
@@ -34,10 +34,10 @@ def signifcant_change(tel_data, link_threshold):
                 return True
         elif(type == 'link'):
             curr_utilization = microseg*tel_data[i].amt_bytes/(tel_data[i].curr_time - tel_data[i].last_time)
-            print(tel_data[i].amt_bytes, tel_data[i].curr_time - tel_data[i].last_time)
+            #print(tel_data[i].amt_bytes, tel_data[i].curr_time - tel_data[i].last_time, curr_utilization)
             prev_utilization = microseg*previous_tel_data[i].amt_bytes/(previous_tel_data[i].curr_time - previous_tel_data[i].last_time)
-            print(previous_tel_data[i].amt_bytes, previous_tel_data[i].curr_time - previous_tel_data[i].last_time)
-            print("diff util: ", fabs(curr_utilization - prev_utilization), link_threshold)
+            #print(previous_tel_data[i].amt_bytes, previous_tel_data[i].curr_time - previous_tel_data[i].last_time, prev_utilization)
+            #print("diff util: ", fabs(curr_utilization - prev_utilization), link_threshold)
             if (fabs(curr_utilization - prev_utilization) > link_threshold):
                 return True
 
@@ -71,11 +71,18 @@ def insertion_ratio_algorithm(flow_id, tel_data, frequency_file, link_threshold)
     previous_tel_data = tel_data
 
     print("New frequency", rf)
+
+    if(flow_id in frequency_dict):
+        old_rf = frequency_dict[flow_id]
+    else:
+        old_rf = 0
+
     frequency_dict[flow_id] = rf
 
-    with open(frequency_file, 'w') as f_file:
-        f_file.write(json.dumps(frequency_dict))
-        f_file.flush()
+    if(rf != old_rf):
+        with open(frequency_file, 'w') as f_file:
+            f_file.write(json.dumps(frequency_dict))
+            f_file.flush()
 
 
 def expand(x):
@@ -105,14 +112,25 @@ def handle_pkt(pkt, frequency_file, tel_file, link_threshold):
 
 
 def main(args):
-
+    iface = 'eth0'
     tel_file = open(args['tel_output_file'], "w")
 
-    iface = 'eth0'
-    print("sniffing on {}".format(iface))
-    sniff(iface = iface,
-          prn = lambda x: handle_pkt(x, args['frequency_file'], tel_file, args['link_threshold']), timeout = args['timeout'])
+    log_file = open('log.txt', "a")
+    log_file.flush()
+    try:
+        log_file.write("Started receiving pkts, output file is:"+ args['tel_output_file']+"\n")
+    except Exception as e:
+        log_file.write(f"Error start: {e}\n")
 
+    try:
+        sniff(iface = iface,
+              prn = lambda x: handle_pkt(x, args['frequency_file'], tel_file, args['link_threshold']), timeout = args['timeout'])
+    except Exception as e:
+        log_file.write(f"Error in sniff: {e}\n")
+
+    log_file.write("Exiting")
+    log_file.close()
+    
     tel_file.close()
 
 

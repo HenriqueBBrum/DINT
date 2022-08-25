@@ -19,23 +19,27 @@ from telemetry_headers import *
 def check_for_file_change(frequency_file, last_modified, frequency_dict):
     modified = os.path.getmtime(frequency_file)
     if(modified != last_modified):
-        with open(frequency_file,"r") as f_file:
-            frequency_dict = json.load(f_file)
+        try:
+            with open(frequency_file,"r") as f_file:
+                frequency_dict = json.load(f_file)
+        except:
+            print("Cant open file")
+
         last_modified = modified
 
     return frequency_dict
 
 # Sends either a telemetry packet or a normal packet according to frequency
-def send_telemtry_or_normal_pkt(count, frequency, telemetry_pkt, normal_pkt):
+def send_telemtry_or_normal_pkt(socket, count, frequency, telemetry_pkt, normal_pkt):
     count+=1
     period = (1/frequency if frequency <= 1 and frequency>0 else 1)
     if(count>=period and frequency>0):
-        print("Sent telemetry flow exists", frequency)
-        sendp(telemetry_pkt, iface='eth0', verbose=0)
+        #print("Sent telemetry flow exists", frequency)
+        socket.send(telemetry_pkt)
         count = 0
     else:
-        print("Sent normal packet flow exists")
-        sendp(normal_pkt, iface='eth0', verbose=0)
+        #print("Sent normal packet flow exists")
+        socket.send(normal_pkt)
 
     return count
 
@@ -59,16 +63,17 @@ def main(args):
             frequency_dict = {}
         last_modified = os.path.getmtime(args['frequency_file'])
 
-
+    s = conf.L2socket(iface='eth0')
+    print("Total ct = ", args['timeout']/args['interval'])
     start = time.time()
     while time.time() - start < args['timeout']:
         try:
             frequency_dict = check_for_file_change(args['frequency_file'], last_modified, frequency_dict)
             if(flow_id in frequency_dict):
-                count = send_telemtry_or_normal_pkt(count, frequency_dict.get(flow_id), telemetry_pkt, normal_pkt)
+                count = send_telemtry_or_normal_pkt(s, count, frequency_dict.get(flow_id), telemetry_pkt, normal_pkt)
             else:
-                print("Sent telemetry packet")
-                sendp(telemetry_pkt, iface='eth0', verbose=0)
+                #print("Sent telemetry packet")
+                s.send(telemetry_pkt)
 
             time.sleep(args['interval'])
 

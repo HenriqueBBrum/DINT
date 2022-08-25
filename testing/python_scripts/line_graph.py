@@ -30,7 +30,7 @@ def real_traffic_data(filepath, unit, experiment_duration):
     with open(filepath) as csvfile:
         data = csv.DictReader(csvfile, delimiter=',')
         for row in data:
-            if(float(row['frame.time_relative']) > experiment_duration):
+            if(float(row['frame.time_relative']) >= experiment_duration):
                 break
             # Keeps adding each pkt size until a second has elapsed. After summing up all bytes in that second, write to list
             if(float(row['frame.time_relative']) - current_time <= 1):
@@ -95,10 +95,15 @@ def telemetry_traffic_data(telemetry_file, switch_id, unit, experiment_duration)
 
 def save_rmse_and_telemetry_byte_count(args, sw_type, real_y_expanded, telemetry_y_expanded, telemetry_byte_count, telemetry_pkts_count):
     rmse = math.sqrt(np.square(np.subtract(real_y_expanded, telemetry_y_expanded)).mean())
-    # print(max(real_y_expanded), min(real_y_expanded[2:]))
-    print(rmse)
-    rmse = rmse/(max(real_y_expanded) - min(real_y_expanded[2:]))    
-    print(rmse)
+    print(max(real_y_expanded), min(real_y_expanded[2:]))
+    print(sum(real_y_expanded)/len(real_y_expanded))
+    print(rmse/(sum(real_y_expanded)/len(real_y_expanded)))
+    # print(rmse)
+    # rmse = rmse/(max(real_y_expanded) - min(real_y_expanded[2:]))    
+    # print(rmse)
+
+    rmse = rmse/(sum(real_y_expanded)/len(real_y_expanded))
+
     filepath = args['rmse_output_folder']+args['traffic_shape']+".csv"
     file_exists = os.path.isfile(filepath)
     y_set = sorted(set(real_y_expanded))
@@ -115,6 +120,7 @@ def save_rmse_and_telemetry_byte_count(args, sw_type, real_y_expanded, telemetry
 
 
 def plot_line_graph(args, sw_type, real_data, telemetry_data):
+   
     real_x, real_y = real_data
     telemetry_x, telemetry_y = telemetry_data
     x_combined = np.sort(np.concatenate([real_x, telemetry_x]))
@@ -138,19 +144,29 @@ def plot_line_graph(args, sw_type, real_data, telemetry_data):
             j+=1
 
     plot1 = plt.figure(1)
-    plt.plot(x_combined, real_y_expanded, color="b", label='Real')
-    plt.plot(x_combined, telemetry_y_expanded, color="r", label='Telemetry')
-    plt.plot(telemetry_x[1:-1], telemetry_y[1:-1], 'o', color='black')
-    plt.plot([telemetry_x[0], telemetry_x[-1]] , [telemetry_y[0], telemetry_y[-1]], '*', color='red');
 
-    plt.fill_between(x_combined, real_y_expanded, telemetry_y_expanded, facecolor='black', alpha=0.2, hatch="X")
+    temp_real_y_expanded = [x * 8 for x in real_y_expanded]
+    temp_telemetry_y_expanded = [x * 8 for x in telemetry_y_expanded]
+    temp_telemetry_y = [x * 8 for x in telemetry_y]
+
+
+    plt.plot(x_combined, temp_real_y_expanded, color="b", label='Real')
+    plt.plot(x_combined, temp_telemetry_y_expanded, color="r", label='Telemetry')
+    plt.plot(telemetry_x[1:-1], temp_telemetry_y[1:-1], 'o', color='black')
+    plt.plot([telemetry_x[0], telemetry_x[-1]] , [temp_telemetry_y[0], temp_telemetry_y[-1]], '*', color='red');
+
+    plt.fill_between(x_combined, temp_real_y_expanded, temp_telemetry_y_expanded, facecolor='black', alpha=0.2, hatch="X")
 
     # plt.fill_between(x_combined, real_y_expanded, telemetry_y_expanded, where=(telemetry_y_expanded > real_y_expanded), interpolate=True, facecolor='red', alpha=0.2)
     # plt.fill_between(x_combined, real_y_expanded, telemetry_y_expanded, where=(telemetry_y_expanded <= real_y_expanded), interpolate=True, facecolor='blue', alpha=0.2)
 
-    plt.xlabel("time(sec)")
-    plt.ylabel("link utilization("+args['unit'].upper()+"B/secs)");
-    plt.title('Real link X Telemetry link (min_telemetry_push_time = '+str(args['min_telemetry_push_time'])+' sec)')
+    plt.xlabel("Time(sec)")
+    plt.ylabel("Link utilization ("+args['unit'].upper()+"bits/secs)");
+    if(sw_type!='sINT'):
+        plt.title('Real link X Telemetry link (min_telemetry_push_time = '+str(args['min_telemetry_push_time'])+' sec)')
+    else:
+        plt.title('Real link X Telemetry link (min_telemetry_insertion = '+str(args['min_sINT_frequency'])+' pkts)')
+
     plt.gca().legend()
     plot1.savefig(args['graphs_output_folder']+args['traffic_shape']+'_Real_X_Telemetry_'+sw_type+'_sw'+args['switch_id']+'.png')
     plot1.clf() 
@@ -166,6 +182,7 @@ def parse_args():
     parser.add_argument('-r', '--rmse_output_folder', type=str, help="Folder for output files")
     parser.add_argument('-d', '--experiment_duration', type=float, help="Duration of the experiment'")
     parser.add_argument('-m', '--min_telemetry_push_time', type=float, help="Minimum polling time in seconds used in the 'p4' files")
+    parser.add_argument('--min_sINT_frequency', type=float, help="Minimum telemetry insertion frequency in a packet")
     parser.add_argument('-s', '--switch_id', type=str, help="Switch id to be compared")
     parser.add_argument('-t', '--traffic_shape', type=str, help = "RMSE traffic shape name", required=False, default="no_type")
     parser.add_argument('-u', '--unit', type=str, help = "Metric Unit (k, m, g)", required=False, default="k")
@@ -196,7 +213,7 @@ def main():
         sw_type = f.split("/")[-1].split(".")[0].split("_")[0]
         real_traffic_file = glob.glob(args['file_folder']+sw_type+"_real*.csv")[0]
         real_x, real_y = real_traffic_data(real_traffic_file, args['unit'], args['experiment_duration'])
-
+        print(sw_type)
         telemetry_data[sw_type] = (telemetry_x, telemetry_y)
 
         if telemetry_x[-1] < real_x[-1]:

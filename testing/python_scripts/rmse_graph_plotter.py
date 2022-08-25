@@ -78,6 +78,7 @@ def plot_bar_graph(filepath, title, ylabel, color, ticks_freq, labels, rects, sw
     ct = 0
     multi = -1
     pos = 0
+    print(rects.items)
     for k, v in rects.items():
         x = sw_type_count_x_map[k]
         r = ax.bar(x-width*multi*pos, v, width, label=k.capitalize(), hatch='\\', align='edge')
