@@ -13,7 +13,7 @@
 		},
 		{
 			"name":"h1",
-			"cmds":["./python_scripts/communication/send.py -a 10.0.2.2 -d 50000 -i 0.1 -s 1000 -t 60  &"]
+			"cmds":["./python_scripts/communication/send.py -a 10.0.2.2 -d 50000 -i 0.02 -s 1400 -t 60  &"]
 		}
 	]
 
