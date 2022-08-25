@@ -7,6 +7,7 @@
 
 /***************************************************************/
 
+const bit<48> tel_insertion_min_window = 500000;
 const bit<48> obs_window = 1000000; // 1 Seg = 1000000 microseg
 const bit<48> max_t = 10000000;
 
@@ -18,8 +19,8 @@ const bit<8> beta = 1; //divisor por shift logo é o mesmo que 2
 const bit<64> div = 0x1999999A; /// used to divide a number by 10
 const bit<64> div_100 = 0x28F5C29;
 
-const bit<32> mean_n = 8;
-const bit<8> div_shift = 3;
+const bit<32> mean_n = 4;
+const bit<8> div_shift = 2;
 const bit<32> base_delta = 300;
 
 
@@ -118,7 +119,7 @@ void update_telemetry_insertion_time(inout metadata meta, inout standard_metadat
     obs_last_seen_reg.read(obs_last_seen, meta.flow_id);
     tel_insertion_window_reg.read(tel_insertion_window, meta.flow_id);
     if(tel_insertion_window == 0){
-        tel_insertion_window = 1000000;
+        tel_insertion_window = tel_insertion_min_window;
         tel_insertion_window_reg.write(meta.flow_id, tel_insertion_window);
     }
 
@@ -134,7 +135,7 @@ void update_telemetry_insertion_time(inout metadata meta, inout standard_metadat
     if(now - obs_last_seen >= obs_window){
         int<32> delta_bytes = (int<32>)pres_amt_bytes - (int<32>)past_amt_bytes;
         if(delta_bytes > (int<32>)delta || delta_bytes < -1*((int<32>)delta)){
-            tel_insertion_window = obs_window; // Decreases time if bytes difference was bigger than expected
+            tel_insertion_window = tel_insertion_min_window; // Decreases time if bytes difference was bigger than expected
         }else{
             tel_insertion_window = min(max_t, (tel_insertion_window*alfa)); // Increases time if bytes difference was smaller than expected
         }
