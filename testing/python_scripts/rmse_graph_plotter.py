@@ -12,7 +12,7 @@ import glob
 metric_unit = {'b': 1, 'k':1000, 'm':1000000, 'g':1000000000}
 
 
-def add_value_labels(ax, spacing=4, y_spacing=0, color='gray'):
+def add_value_labels(ax, decimal_format=2, spacing=8, y_spacing=0, color='black'):
     # For each bar: Place a label
     for rect in ax.patches:
         # Get X and Y placement of label from rect.
@@ -30,9 +30,9 @@ def add_value_labels(ax, spacing=4, y_spacing=0, color='gray'):
             space *= -1
             # Vertically align label at top
             va = 'top'
-
         # Use Y value as label and format number with one decimal place
-        label = "{:.1f}".format(y_value)
+        str_ = "{:."+decimal_format+"f}"
+        label = str_.format(y_value)
 
         # Create annotation
         ax.annotate(
@@ -58,15 +58,17 @@ def crete_bar_graph_rects(data, pos, mult):
 
         labels.append(push_time)
         if sw_type not in rects:
-            rects[sw_type] = [(v[pos]/v[0])*mult]
+            rects[sw_type] = ([(sum(v[pos])/len(v[pos]))*mult], [np.std(v[pos])*mult])
         else:
-            rects[sw_type].append((v[pos]/v[0])*mult)
+            rects[sw_type][0].append((sum(v[pos])/len(v[pos]))*mult)
+            rects[sw_type][1].append(np.std(v[pos])*mult)
+
             sw_type_count[sw_type] = sw_type_count[sw_type]+1
 
     return labels, rects, sw_type_count
 
 
-def plot_bar_graph(filepath, title, ylabel, color, ticks_freq, labels, rects, sw_type_count):
+def plot_bar_graph(filepath, title, ylabel, ticks_freq, labels, rects, sw_type_count, label_decimal_house):
     fig, ax = plt.subplots()
     labels = list(dict.fromkeys(labels))
 
@@ -78,10 +80,11 @@ def plot_bar_graph(filepath, title, ylabel, color, ticks_freq, labels, rects, sw
     ct = 0
     multi = -1
     pos = 0
-    print(rects.items)
+
     for k, v in rects.items():
         x = sw_type_count_x_map[k]
-        r = ax.bar(x-width*multi*pos, v, width, label=k.capitalize(), hatch='\\', align='edge')
+        r = ax.bar(x-width*multi*pos, v[0], width, yerr=v[1], label=k.capitalize(), hatch='\\', align='edge', capsize=3, 
+            error_kw={'elinewidth':1, 'alpha':0.65})
        
         if ct%2 == 0:
             pos = pos +1
@@ -91,15 +94,15 @@ def plot_bar_graph(filepath, title, ylabel, color, ticks_freq, labels, rects, sw
         ct = ct +1
 
 
-    add_value_labels(ax, y_spacing=-2, color='orange')
+    add_value_labels(ax, label_decimal_house, y_spacing=-2)
 
     ax.set_title(title)
     ax.set_ylabel(ylabel)
     
 
     max_ = 0
-    for rect in rects.values():
-        local_max = max(rect)
+    for rect in rects.values(): # Get biggest value of all and make ylim 50% bigger
+        local_max = max(rect[0])
         if(local_max > max_): max_ = local_max
     
     ax.set_ylim([0, max_+0.5*max_])
@@ -123,12 +126,12 @@ def plot_graphs(output_folder, traffic_type, sw_id, total_time, data, unit):
 
     rmse_title = 'Measurement Error - '+'SW'+sw_id+' | '+total_time+'s'
     rmse_filepath = output_folder+traffic_type+'_RMSE_'+sw_id+'_'+total_time.split('.')[0]+'s.png'
-    plot_bar_graph(rmse_filepath, rmse_title, 'RMSE (%)', 'tab:orange', 5, *crete_bar_graph_rects(data, 1, 100))
+    plot_bar_graph(rmse_filepath, rmse_title, 'NRMSE (%)', 1, *crete_bar_graph_rects(data, 1, 100), "3")
 
 
     byte_cnt_title = 'Telemetry Overhead - '+'SW'+sw_id+' | '+total_time+'s'
     byte_cnt_filepath = output_folder+traffic_type+'s_Tel_Overhead_'+sw_id+'_'+total_time.split('.')[0]+'s.png'
-    plot_bar_graph(byte_cnt_filepath, byte_cnt_title, 'Bytes ('+unit.upper()+')', 'tab:green', 200, *crete_bar_graph_rects(data, 2, metric_unit[unit]))
+    plot_bar_graph(byte_cnt_filepath, byte_cnt_title, 'Bytes ('+unit.upper()+')', 250, *crete_bar_graph_rects(data, 2, metric_unit[unit]), "0")
 
   
 
@@ -158,14 +161,16 @@ def main():
                 f_key = row['sw_id']+"_"+row['experiment_time']
                 s_key = row['sw_type']+"_"+row['min_telemetry_push_time']
                 if (f_key+s_key) in my_dict:
-                    count, previous_rmse, previous_byte_count, previous_experiment_time = my_dict[(f_key+s_key)]
-                    updated_value = (float(count+1), previous_rmse+float(row['rmse']), previous_byte_count+float(row['telemetry_byte_count']),
+                    count, rmse_lst, byte_cnt_lst, previous_experiment_time = my_dict[(f_key+s_key)]
+                    rmse_lst.append(float(row['rmse']))
+                    byte_cnt_lst.append(float(row['telemetry_byte_count']))
+                    updated_value = (float(count+1),rmse_lst, byte_cnt_lst,
                                 previous_experiment_time+float(row['experiment_time']))
 
                     my_dict[(f_key+s_key)] = updated_value
                     graph_dict[f_key][s_key] = updated_value
                 else:
-                    value = (1, float(row['rmse']), float(row['telemetry_byte_count']), float(row['experiment_time']))
+                    value = (1, [float(row['rmse'])], [float(row['telemetry_byte_count'])], float(row['experiment_time']))
                     my_dict[(f_key+s_key)] = value
                     if f_key not in graph_dict:
                         graph_dict[f_key] = {}
@@ -176,7 +181,9 @@ def main():
        
         final_dict = OrderedDict()
         for k, v in graph_dict.items():
-            print(k, v)
+            final_dict[k] = dict(sorted(v.items(), key=lambda item: item[0].split("_")[1], reverse=False))
+
+        for k, v in final_dict.items():
             sw_id, total_time = k.split('_')
             plot_graphs(args['graphs_output_folder'], traffic_type, sw_id, total_time, v, args['unit'])
            
