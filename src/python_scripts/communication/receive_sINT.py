@@ -19,7 +19,7 @@ previous_tel_data = []
 timer = 0
 
 timeout = 2
-min_frequency = 0.002
+min_frequency = 0.001
 
 type = 'link'
 

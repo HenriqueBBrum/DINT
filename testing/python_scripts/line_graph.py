@@ -95,13 +95,6 @@ def telemetry_traffic_data(telemetry_file, switch_id, unit, experiment_duration)
 
 def save_rmse_and_telemetry_byte_count(args, sw_type, real_y_expanded, telemetry_y_expanded, telemetry_byte_count, telemetry_pkts_count):
     rmse = math.sqrt(np.square(np.subtract(real_y_expanded, telemetry_y_expanded)).mean())
-    print(max(real_y_expanded), min(real_y_expanded[2:]))
-    print(sum(real_y_expanded)/len(real_y_expanded))
-    print(rmse/(sum(real_y_expanded)/len(real_y_expanded)))
-    # print(rmse)
-    # rmse = rmse/(max(real_y_expanded) - min(real_y_expanded[2:]))    
-    # print(rmse)
-
     rmse = rmse/(sum(real_y_expanded)/len(real_y_expanded))
 
     filepath = args['rmse_output_folder']+args['traffic_shape']+".csv"
@@ -162,10 +155,8 @@ def plot_line_graph(args, sw_type, real_data, telemetry_data):
 
     plt.xlabel("Time(sec)")
     plt.ylabel("Link utilization ("+args['unit'].upper()+"bits/secs)");
-    if(sw_type!='sINT'):
-        plt.title('Real link X Telemetry link (min_telemetry_push_time = '+str(args['min_telemetry_push_time'])+' sec)')
-    else:
-        plt.title('Real link X Telemetry link (min_telemetry_insertion = '+str(args['min_sINT_frequency'])+' pkts)')
+   
+    plt.title('Real link X Telemetry link')
 
     plt.gca().legend()
     plot1.savefig(args['graphs_output_folder']+args['traffic_shape']+'_Real_X_Telemetry_'+sw_type+'_sw'+args['switch_id']+'.png')
@@ -182,7 +173,7 @@ def parse_args():
     parser.add_argument('-r', '--rmse_output_folder', type=str, help="Folder for output files")
     parser.add_argument('-d', '--experiment_duration', type=float, help="Duration of the experiment'")
     parser.add_argument('-m', '--min_telemetry_push_time', type=float, help="Minimum polling time in seconds used in the 'p4' files")
-    parser.add_argument('--min_sINT_frequency', type=float, help="Minimum telemetry insertion frequency in a packet")
+    parser.add_argument('--min_sINT_frequency', type=float, help="Minimum telemetry insertion frequency in a packet", required=False)
     parser.add_argument('-s', '--switch_id', type=str, help="Switch id to be compared")
     parser.add_argument('-t', '--traffic_shape', type=str, help = "RMSE traffic shape name", required=False, default="no_type")
     parser.add_argument('-u', '--unit', type=str, help = "Metric Unit (k, m, g)", required=False, default="k")
@@ -213,14 +204,13 @@ def main():
         sw_type = f.split("/")[-1].split(".")[0].split("_")[0]
         real_traffic_file = glob.glob(args['file_folder']+sw_type+"_real*.csv")[0]
         real_x, real_y = real_traffic_data(real_traffic_file, args['unit'], args['experiment_duration'])
-        print(sw_type)
         telemetry_data[sw_type] = (telemetry_x, telemetry_y)
 
         if telemetry_x[-1] < real_x[-1]:
             telemetry_x.append(real_x[-1])
             telemetry_y.append(telemetry_y[-1])
 
-        print(f, sw_type)
+        # print(f, sw_type)
         real_y_expanded, telemetry_y_expanded = plot_line_graph(args, sw_type, (real_x, real_y), telemetry_data.get(sw_type))
 
         save_rmse_and_telemetry_byte_count(args, sw_type, real_y_expanded, telemetry_y_expanded, telemetry_byte_count, len(telemetry_x))
