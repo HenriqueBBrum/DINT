@@ -206,4 +206,78 @@ ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/sta
 Error in sniff: [Errno 19] No such device
 ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/dynamic_telemetry_pkts.txt
 Error in sniff: [Errno 19] No such device
+ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/dynamic_telemetry_pkts.txt
+Error in sniff: [Errno 19] No such device
+ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/dynamic_telemetry_pkts.txt
+Error in sniff: [Errno 19] No such device
+ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/dynamic_telemetry_pkts.txt
+Error in sniff: [Errno 19] No such device
+ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/dynamic_telemetry_pkts.txt
+Error in sniff: [Errno 19] No such device
+ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/dynamic_telemetry_pkts.txt
+Error in sniff: [Errno 19] No such device
+ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/dynamic_telemetry_pkts.txt
+Error in sniff: [Errno 19] No such device
+ExitingStarted receiving pkts, output file is:test.txt
+ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/dynamic_telemetry_pkts.txt
+Error in sniff: [Errno 19] No such device
+ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/dynamic_telemetry_pkts.txt
+Error in sniff: [Errno 19] No such device
+ExitingStarted receiving pkts, output file is:test.txt
+ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/dynamic_telemetry_pkts.txt
+Error in sniff: [Errno 19] No such device
+ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/dynamic_telemetry_pkts.txt
+Error in sniff: [Errno 19] No such device
+ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/dynamic_telemetry_pkts.txt
+Error in sniff: [Errno 19] No such device
+ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/dynamic_telemetry_pkts.txt
+Error in sniff: [Errno 19] No such device
+ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/dynamic_telemetry_pkts.txt
+Error in sniff: [Errno 19] No such device
+ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/dynamic_telemetry_pkts.txt
+Error in sniff: [Errno 19] No such device
+ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/dynamic_telemetry_pkts.txt
+Error in sniff: [Errno 19] No such device
+ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/dynamic_telemetry_pkts.txt
+Error in sniff: [Errno 19] No such device
+ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/dynamic_telemetry_pkts.txt
+ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/dynamic_telemetry_pkts.txt
+Error in sniff: [Errno 19] No such device
+ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/dynamic_telemetry_pkts.txt
+Error in sniff: [Errno 19] No such device
+ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/dynamic_telemetry_pkts.txt
+Error in sniff: [Errno 19] No such device
+ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/dynamic_telemetry_pkts.txt
+Error in sniff: [Errno 19] No such device
+ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/dynamic_telemetry_pkts.txt
+Error in sniff: [Errno 19] No such device
+ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/dynamic_telemetry_pkts.txt
+Error in sniff: [Errno 19] No such device
+ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/dynamic_telemetry_pkts.txt
+Error in sniff: [Errno 19] No such device
+ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/dynamic_telemetry_pkts.txt
+ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/static_telemetry_pkts.txt
+ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/dynamic_telemetry_pkts.txt
+ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/static_telemetry_pkts.txt
+ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/dynamic_telemetry_pkts.txt
+ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/static_telemetry_pkts.txt
+ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/dynamic_telemetry_pkts.txt
+ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/static_telemetry_pkts.txt
+ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/dynamic_telemetry_pkts.txt
+ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/static_telemetry_pkts.txt
+ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/dynamic_telemetry_pkts.txt
+ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/static_telemetry_pkts.txt
+ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/dynamic_telemetry_pkts.txt
+ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/static_telemetry_pkts.txt
+ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/dynamic_telemetry_pkts.txt
+ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/static_telemetry_pkts.txt
+ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/dynamic_telemetry_pkts.txt
+ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/static_telemetry_pkts.txt
+ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/dynamic_telemetry_pkts.txt
+ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/static_telemetry_pkts.txt
+ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/dynamic_telemetry_pkts.txt
+ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/static_telemetry_pkts.txt
+ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/dynamic_telemetry_pkts.txt
+ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/static_telemetry_pkts.txt
+ExitingStarted receiving pkts, output file is:../testing/results/pkts_output/dynamic_telemetry_pkts.txt
 Exiting
