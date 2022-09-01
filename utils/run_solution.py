@@ -375,6 +375,8 @@ class P4_Simulation:
                 dev_instance.cmd(cmd)
                 print(cmd)
 
+            sleep(0.5)
+
         sleep(self.test['time'])
         
 

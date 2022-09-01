@@ -79,7 +79,7 @@ void five_tuple_hash(inout headers hdr, inout metadata meta){
 
     if(hdr.ipv4.isValid() && hdr.udp.isValid()){
         hash(hash_res, HashAlgorithm.crc32, 32w0,
-                {hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.udp.src_port, hdr.udp.dst_port, hdr.ipv4.protocol}, (bit<32>)MAX_FLOWS);
+                {hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.udp.dst_port, hdr.ipv4.protocol}, (bit<32>)MAX_FLOWS);
 
         meta.flow_id = hash_res;
     }
