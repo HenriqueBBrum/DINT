@@ -23,6 +23,8 @@ import argparse
 import json
 import os
 import subprocess
+import threading
+
 from time import sleep
 
 import p4runtime_lib.simple_controller
@@ -367,15 +369,19 @@ class P4_Simulation:
         print(self.test)
 
         print('Starting test')
-
+        ct = 0
         for device in self.test['devices']:
             dev_instance = self.net.get(device.get('name'))
-            print(device.get('name'))
+            # print(device.get('name'))
+
             for cmd in device['cmds']:
                 dev_instance.cmd(cmd)
                 print(cmd)
 
-            sleep(0.5)
+            # First two device are receivers while the rest are clientes. Wait receivers to configure before sending
+            ct = ct + 1
+            if(ct == 2):
+                sleep(0.5)
 
         sleep(self.test['time'])
         

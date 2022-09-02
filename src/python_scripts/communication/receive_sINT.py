@@ -19,7 +19,7 @@ previous_tel_data = []
 timer = 0
 
 timeout = 2
-min_frequency = 0.001
+min_frequency = 0.1
 
 type = 'link'
 
@@ -34,10 +34,7 @@ def signifcant_change(tel_data, link_threshold):
                 return True
         elif(type == 'link'):
             curr_utilization = microseg*tel_data[i].amt_bytes/(tel_data[i].curr_time - tel_data[i].last_time)
-            #print(tel_data[i].amt_bytes, tel_data[i].curr_time - tel_data[i].last_time, curr_utilization)
             prev_utilization = microseg*previous_tel_data[i].amt_bytes/(previous_tel_data[i].curr_time - previous_tel_data[i].last_time)
-            #print(previous_tel_data[i].amt_bytes, previous_tel_data[i].curr_time - previous_tel_data[i].last_time, prev_utilization)
-            #print("diff util: ", fabs(curr_utilization - prev_utilization), link_threshold)
             if (fabs(curr_utilization - prev_utilization) > link_threshold):
                 return True
 
@@ -102,11 +99,8 @@ def handle_pkt(pkt, frequency_file, tel_file, link_threshold):
         tel_file.write(f"{count}, {data_layers[0].hop_cnt}, {data_layers[0].telemetry_data_sz}\n")
 
         for sw in data_layers[1:]:
-            #utilization = 8.0*sw.amt_bytes/(sw.curr_time - sw.last_time)
-            tel_file.write(f"{sw.sw_id}, {sw.flow_id}, {sw.amt_bytes}, {sw.last_time}, {sw.curr_time}\n")
-            #print(f"Switch {sw.sw_id} - Flow {sw.flow_id}: {sw.amt_bytes}, {sw.last_time}, {sw.curr_time}")
+            tel_file.write(f"{sw.sw_id},{sw.amt_bytes}, {sw.last_time}, {sw.curr_time}\n")
 
-        # flow_id =
         insertion_ratio_algorithm(flow_id, data_layers[1:], frequency_file, link_threshold)
 
 

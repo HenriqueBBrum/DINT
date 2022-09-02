@@ -13,7 +13,7 @@
 		},
 		{
 			"name":"h1",
-			"cmds":["./python_scripts/communication/send_sINT.py -f python_scripts/input_files/frequency_table.json -a 10.0.2.2 -d 50000 -i 0.002 -s 1400 -t 60  &"]
+			"cmds":["./python_scripts/communication/send_sINT.py -f python_scripts/input_files/frequency_table.json -a 10.0.2.2 -d 50000 -i 0.5 -s 1400 -t 10 &"]
 		}
 	]
 
