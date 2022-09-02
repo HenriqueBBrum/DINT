@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
 
-
-
-# Usage: python3 line_graph.py -f ../input_files/ -m 1 -s 1 
-
 import matplotlib.pyplot as plt
 import math
 import csv
@@ -17,7 +13,7 @@ import glob
 metric_unit = {'k':1000, 'm':1000000, 'g':1000000000}
 
 microseg = 1000000
-telemetry_data_sz = 17
+telemetry_data_sz = 21
 telelemetry_header_sz = 4
 
 # Reads real data from csv file to find the amount of bytes transported each second
@@ -32,6 +28,7 @@ def real_traffic_data(filepath, unit, experiment_duration):
         for row in data:
             if(float(row['frame.time_relative']) >= experiment_duration):
                 break
+
             # Keeps adding each pkt size until a second has elapsed. After summing up all bytes in that second, write to list
             if(float(row['frame.time_relative']) - current_time <= 1):
                 grouped_amt_bytes+=int(row['frame.len'])
@@ -46,14 +43,12 @@ def real_traffic_data(filepath, unit, experiment_duration):
 
                 if(diff > 1):
                     y.extend([0]*(diff-1))
-                    x.extend(list(range(previous_time+1, previous_time+diff)))
+                    x.extend(list(range(previous_time+2, previous_time+diff+1)))
 
                 grouped_amt_bytes=int(row['frame.len'])
 
         y.append(grouped_amt_bytes/metric_unit[unit])
         x.append(current_time+1)
-
-
 
     return x, y
 
@@ -80,11 +75,12 @@ def telemetry_traffic_data(telemetry_file, switch_id, unit, experiment_duration)
             else:
                 if(cols[0]==switch_id):
                     time_window_s = (int(cols[-1],10)-int(cols[-2],10))/(microseg)
+                    # print(line)
                     time_window_s = 1 if time_window_s == 0 else time_window_s
                     if(prev_time+time_window_s) > experiment_duration:
                         return x, y, telemetry_byte_count
                     x.append(prev_time+time_window_s)
-                    y.append((float(cols[2])/time_window_s)/metric_unit[unit])
+                    y.append((float(cols[1])/time_window_s)/metric_unit[unit])
                     
 
                     prev_time+=time_window_s
@@ -95,7 +91,7 @@ def telemetry_traffic_data(telemetry_file, switch_id, unit, experiment_duration)
 
 def save_rmse_and_telemetry_byte_count(args, sw_type, real_y_expanded, telemetry_y_expanded, telemetry_byte_count, telemetry_pkts_count):
     rmse = math.sqrt(np.square(np.subtract(real_y_expanded, telemetry_y_expanded)).mean())
-    rmse = rmse/(sum(real_y_expanded)/len(real_y_expanded))
+    #rmse = rmse/(sum(real_y_expanded)/len(real_y_expanded))
 
     filepath = args['rmse_output_folder']+args['traffic_shape']+".csv"
     file_exists = os.path.isfile(filepath)
@@ -127,10 +123,11 @@ def plot_line_graph(args, sw_type, real_data, telemetry_data):
             telemetry_y_expanded.append(telemetry_y[j])
             i+=1
 
+
     i, j = 0, 0
     real_y_expanded = []
     while j<len(real_x) and i<len(x_combined):
-        if int(x_combined[i]) == real_x[j]:
+        if x_combined[i] <= real_x[j]:
             real_y_expanded.append(real_y[j])
             i+=1
         else:
@@ -142,16 +139,16 @@ def plot_line_graph(args, sw_type, real_data, telemetry_data):
     temp_telemetry_y_expanded = [x * 8 for x in telemetry_y_expanded]
     temp_telemetry_y = [x * 8 for x in telemetry_y]
 
+    plt.step(x_combined, temp_real_y_expanded, color="b", label='Real')
+    plt.step(x_combined, temp_telemetry_y_expanded, color="r", label='Telemetry')
 
-    plt.plot(x_combined, temp_real_y_expanded, color="b", label='Real')
-    plt.plot(x_combined, temp_telemetry_y_expanded, color="r", label='Telemetry')
     plt.plot(telemetry_x[1:-1], temp_telemetry_y[1:-1], 'o', color='black')
     plt.plot([telemetry_x[0], telemetry_x[-1]] , [temp_telemetry_y[0], temp_telemetry_y[-1]], '*', color='red');
+    plt.plot([real_x[0], real_x[-1]] , [temp_real_y_expanded[0], temp_real_y_expanded[-1]], '*', color='blue');
 
-    plt.fill_between(x_combined, temp_real_y_expanded, temp_telemetry_y_expanded, facecolor='black', alpha=0.2, hatch="X")
-
-    # plt.fill_between(x_combined, real_y_expanded, telemetry_y_expanded, where=(telemetry_y_expanded > real_y_expanded), interpolate=True, facecolor='red', alpha=0.2)
-    # plt.fill_between(x_combined, real_y_expanded, telemetry_y_expanded, where=(telemetry_y_expanded <= real_y_expanded), interpolate=True, facecolor='blue', alpha=0.2)
+   
+    #plt.fill_between(x_combined, temp_real_y_expanded, temp_telemetry_y_expanded, where=(temp_telemetry_y_expanded > temp_real_y_expanded), facecolor='red', alpha=0.2)
+    plt.fill_between(x_combined, temp_real_y_expanded, temp_telemetry_y_expanded, step='pre', interpolate=True, facecolor='black', alpha=0.2, hatch="X")
 
     plt.xlabel("Time(sec)")
     plt.ylabel("Link utilization ("+args['unit'].upper()+"bits/secs)");
@@ -204,18 +201,16 @@ def main():
         sw_type = f.split("/")[-1].split(".")[0].split("_")[0]
         real_traffic_file = glob.glob(args['file_folder']+sw_type+"_real*.csv")[0]
         real_x, real_y = real_traffic_data(real_traffic_file, args['unit'], args['experiment_duration'])
-        telemetry_data[sw_type] = (telemetry_x, telemetry_y)
 
         if telemetry_x[-1] < real_x[-1]:
             telemetry_x.append(real_x[-1])
             telemetry_y.append(telemetry_y[-1])
 
-        # print(f, sw_type)
+        telemetry_data[sw_type] = (telemetry_x, telemetry_y)
+
+
         real_y_expanded, telemetry_y_expanded = plot_line_graph(args, sw_type, (real_x, real_y), telemetry_data.get(sw_type))
-
         save_rmse_and_telemetry_byte_count(args, sw_type, real_y_expanded, telemetry_y_expanded, telemetry_byte_count, len(telemetry_x))
-
-    #plot_rmse_graph(args, rmse_dict)
 
   
 if __name__ == '__main__':

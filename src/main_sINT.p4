@@ -4,6 +4,7 @@
 
 #include "include/headers.p4"
 #include "include/parsers.p4"
+#include "include/checksum.p4"
 
 
 /*************************************************************************
@@ -11,50 +12,17 @@
 *************************************************************************/
 
 
-register<bit<32>>(MAX_FLOWS) pres_byte_cnt_reg;
-register<bit<32>>(MAX_FLOWS) past_byte_cnt_reg;
-register<bit<32>>(MAX_FLOWS) packets_cnt_reg;
+register<bit<32>>(MAX_PORTS) pres_byte_cnt_reg;
+register<bit<32>>(MAX_PORTS) past_byte_cnt_reg;
+register<bit<32>>(MAX_PORTS) packets_cnt_reg;
 
-register<time_t>(MAX_FLOWS) previous_insertion_reg;
+register<time_t>(MAX_PORTS) previous_insertion_reg;
 
-
-
-/*************************************************************************
-************   C H E C K S U M    V E R I F I C A T I O N   *************
-*************************************************************************/
-
-control MyVerifyChecksum(inout headers hdr, inout metadata meta) {
-    apply {  }
-}
 
 
 /*************************************************************************
 **************  I N G R E S S   P R O C E S S I N G   *******************
 *************************************************************************/
-
-
-time_t max(in time_t v1,in time_t v2){
-    if(v1 > v2) return v1;
-    else return v2;
-}
-
-time_t min(in time_t v1, in time_t v2){
-    if(v1 < v2) return v1;
-    else return v2;
-}
-
-void five_tuple_hash(inout headers hdr, inout metadata meta){
-    bit<32> hash_res;
-
-    meta.flow_id =  MAX_FLOWS+1;
-
-    if(hdr.ipv4.isValid() && hdr.udp.isValid()){
-        hash(hash_res, HashAlgorithm.crc32, 32w0,
-                {hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.udp.src_port, hdr.udp.dst_port, hdr.ipv4.protocol}, (bit<32>)MAX_FLOWS);
-
-        meta.flow_id = hash_res;
-    }
-}
 
 
 control MyIngress(inout headers hdr,
@@ -86,8 +54,8 @@ control MyIngress(inout headers hdr,
     }
 
     action clone_pkt() {
-        clone_preserving_field_list(CloneType.I2E, REPORT_MIRROR_SESSION_ID, COPY_INDEX);
         meta.cloned = 1;
+        clone_preserving_field_list(CloneType.I2E, REPORT_MIRROR_SESSION_ID, COPY_INDEX);
     }
 
     table clone_I2E{
@@ -105,21 +73,38 @@ control MyIngress(inout headers hdr,
         if (hdr.ipv4.isValid()){
             ipv4_lpm.apply();
             if(hdr.udp.isValid()){
-                five_tuple_hash(hdr, meta);
+                meta.port_id = 0;//(bit<32>)standard_metadata.egress_spec;
 
-                if(meta.flow_id < (bit<32>)MAX_FLOWS){
+                if(meta.port_id < (bit<32>)MAX_PORTS){
                     bit<32> amt_packets;bit<32> amt_bytes;
 
-                    packets_cnt_reg.read(amt_packets, meta.flow_id);
+                    packets_cnt_reg.read(amt_packets, meta.port_id);
                     amt_packets = amt_packets+1;
-                    packets_cnt_reg.write(meta.flow_id, amt_packets);
+                    packets_cnt_reg.write(meta.port_id, amt_packets);
 
-                    pres_byte_cnt_reg.read(amt_bytes, meta.flow_id);
+                    pres_byte_cnt_reg.read(amt_bytes, meta.port_id);
                     amt_bytes = amt_bytes+standard_metadata.packet_length;
-                    pres_byte_cnt_reg.write(meta.flow_id,  amt_bytes);
+                    pres_byte_cnt_reg.write(meta.port_id,  amt_bytes);
 
-                    if(hdr.telemetry.isValid())
+                    time_t now = standard_metadata.ingress_global_timestamp;
+
+                    time_t previous_insertion;
+                    previous_insertion_reg.read(previous_insertion, meta.port_id);
+
+                    if(previous_insertion == 0){
+                        previous_insertion = now;
+                        previous_insertion_reg.write(meta.port_id, now);
+                    }
+
+                    if(hdr.telemetry.isValid()){
+                        meta.last_time = previous_insertion;
+                        meta.curr_time = now;
+
+                        previous_insertion_reg.write(meta.port_id, now);
+
+
                         clone_I2E.apply();
+                    }
                 }
             }
         }
@@ -131,15 +116,7 @@ control MyIngress(inout headers hdr,
 *************************************************************************/
 
 void insert_telemetry(inout headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata, in bit<32> pres_amt_bytes){
-        time_t previous_insertion;
-        previous_insertion_reg.read(previous_insertion, meta.flow_id);
-
-        time_t now = standard_metadata.egress_global_timestamp;
-        if(previous_insertion == 0){
-            previous_insertion = now;
-            previous_insertion_reg.write(meta.flow_id, now);
-        }
-
+       
         if(hdr.telemetry.isValid() && hdr.telemetry.hop_cnt < MAX_HOPS){
             hdr.telemetry.hop_cnt = hdr.telemetry.hop_cnt + 1;
             hdr.ethernet.ether_type = TYPE_TELEMETRY;
@@ -156,14 +133,18 @@ void insert_telemetry(inout headers hdr, inout metadata meta, inout standard_met
                 hdr.tel_data[0].bos = 0;
 
             hdr.tel_data[0].sw_id = meta.sw_id;
-            hdr.tel_data[0].flow_id = meta.flow_id;
-            hdr.tel_data[0].amt_bytes = pres_amt_bytes;
-            hdr.tel_data[0].last_time = previous_insertion;
-            hdr.tel_data[0].curr_time = now; // bit<64>)(now - previous_insertion);
+            hdr.tel_data[0].port_id = meta.port_id;
 
-            pres_byte_cnt_reg.write(meta.flow_id, 0);
-            past_byte_cnt_reg.write(meta.flow_id, 0);
-            previous_insertion_reg.write(meta.flow_id, now);
+            if(hdr.telemetry.hop_cnt>1)
+                hdr.tel_data[0].amt_bytes = pres_amt_bytes - (bit<32>)(hdr.telemetry.hop_cnt-1)*(TEL_DATA_SZ) - TEL_H_SZ;
+            else
+                hdr.tel_data[0].amt_bytes = pres_amt_bytes;
+
+            hdr.tel_data[0].last_time = meta.last_time;
+            hdr.tel_data[0].curr_time = meta.curr_time;
+
+            pres_byte_cnt_reg.write(meta.port_id, 0);
+            past_byte_cnt_reg.write(meta.port_id, 0);
         }
 }
 
@@ -215,65 +196,38 @@ control MyEgress(inout headers hdr,
 
         apply{
             if(hdr.ipv4.isValid() && hdr.udp.isValid()){
-                five_tuple_hash(hdr, meta);
+                sw_id.apply();
 
-                if(meta.flow_id < (bit<32>)MAX_FLOWS){
-                    sw_id.apply();
+                bit<32> amt_bytes;
+                pres_byte_cnt_reg.read(amt_bytes, meta.port_id);
 
-                    bit<32> amt_bytes;
-                    pres_byte_cnt_reg.read(amt_bytes, meta.flow_id);
+                if(standard_metadata.instance_type == PKT_INSTANCE_TYPE_INGRESS_CLONE){
+                    clone_lpm.apply();
 
-                    if(standard_metadata.instance_type == PKT_INSTANCE_TYPE_INGRESS_CLONE){
-                        clone_lpm.apply();
+                     /** Collects metadata */
+                    insert_telemetry(hdr, meta, standard_metadata, amt_bytes);
 
-                         /** Collects metadata */
+                    bit<32> truncate_sz = L2_HEADERS_SZ+(bit<32>)hdr.telemetry.hop_cnt*TEL_DATA_SZ;
+
+                    truncate(truncate_sz); // Remove user data from clone packet
+                    hdr.ipv4.total_len = 28;
+                    hdr.udp.len = 8;
+                }else if(standard_metadata.instance_type == PKT_INSTANCE_TYPE_NORMAL){
+                    // If switch is a transit switch and has telemetry, add tel_data
+                    // If its a sink switch, remove telemetry headers
+                    if(meta.cloned == 0)
                         insert_telemetry(hdr, meta, standard_metadata, amt_bytes);
-
-                        bit<32> truncate_sz = L2_HEADERS_SZ+(bit<32>)hdr.telemetry.hop_cnt*TEL_DATA_SZ;
-
-                        truncate(truncate_sz); // Remove user data from clone packet
-                        hdr.ipv4.total_len = 28;
-                        hdr.udp.len = 8;
-                    }else if(standard_metadata.instance_type == PKT_INSTANCE_TYPE_NORMAL){
-                        // If switch is a transit switch and has telemetry, add tel_data
-                        // If its a sink switch, remove telemetry headers
-                        if(meta.cloned == 0)
-                            insert_telemetry(hdr, meta, standard_metadata, amt_bytes);
-                        else{
-                            hdr.telemetry.setInvalid();
-                            hdr.tel_data.pop_front(MAX_HOPS);
-                            hdr.ethernet.ether_type = TYPE_IPV4;
-                        }
+                    else{
+                        hdr.telemetry.setInvalid();
+                        hdr.tel_data.pop_front(MAX_HOPS);
+                        hdr.ethernet.ether_type = TYPE_IPV4;
                     }
                 }
+                
             }
         }
 }
 
-
-/*************************************************************************
-*************   C H E C K S U M    C O M P U T A T I O N   **************
-*************************************************************************/
-
-control MyComputeChecksum(inout headers  hdr, inout metadata meta) {
-     apply {
-	update_checksum(
-	    hdr.ipv4.isValid(),
-            { hdr.ipv4.version,
-	          hdr.ipv4.ihl,
-              hdr.ipv4.tos,
-              hdr.ipv4.total_len,
-              hdr.ipv4.identification,
-              hdr.ipv4.flags,
-              hdr.ipv4.frag_offset,
-              hdr.ipv4.ttl,
-              hdr.ipv4.protocol,
-              hdr.ipv4.src_addr,
-              hdr.ipv4.dst_addr },
-            hdr.ipv4.hdr_checksum,
-            HashAlgorithm.csum16);
-    }
-}
 
 
 /*************************************************************************
