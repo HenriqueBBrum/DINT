@@ -7,14 +7,16 @@
 #define PKT_INSTANCE_TYPE_RESUBMIT 6
 
 #define MAX_FLOWS 1024 // Maximum number of flows
+#define MAX_PORTS 10
 #define MAX_HOPS 8 // Maximum number of hops of a telemetry packet
 
-#define L2_HEADERS_SZ 44 //  Ethernet (40) +  Telemtry (4) + IP Byte size
+#define L2_HEADERS_SZ 44 //  Ethernet (40) +  Telemetry (4) + IP Byte size
+#define TEL_H_SZ 4
 #define TEL_DATA_SZ 21 // Size (B) of each tel_data header
 #define UDP_LEN 8 // Size (B) of a UDP header
 
 
-#define COPY_INDEX 0 // Used to copy metadata froma original packet to a cloned packet (not used)
+#define COPY_INDEX 0 // Used to copy metadata from a original packet to a cloned packet 
 #define REPORT_MIRROR_SESSION_ID 500 // Session for mirrored packets
 
 
@@ -51,7 +53,7 @@ header telemetry_t{
 header telemetry_data_t{
     bit<1> bos;
     bit<7> sw_id;
-    bit<32> flow_id;
+    bit<32> port_id;
 
     // monitoring values
     bit<32> amt_bytes;
@@ -85,9 +87,17 @@ header udp_t {
 
 // Metada of each packet during processing inside a switch
 struct metadata {
+    @field_list(COPY_INDEX)
+    bit<1> insert_tel;
     bit<1> cloned;
     bit<7> sw_id;
-    bit<32> flow_id;
+
+    @field_list(COPY_INDEX)
+    bit<32> port_id;
+    @field_list(COPY_INDEX)
+    bit<48> last_time;
+    @field_list(COPY_INDEX)
+    bit<48> curr_time;
 }
 
 // Overall structure of a packet header
@@ -98,3 +108,5 @@ struct headers {
     ipv4_t       ipv4;
     udp_t        udp;
 }
+
+

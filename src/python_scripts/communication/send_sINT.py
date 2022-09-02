@@ -34,11 +34,9 @@ def send_telemtry_or_normal_pkt(socket, count, frequency, telemetry_pkt, normal_
     count+=1
     period = (1/frequency if frequency <= 1 and frequency>0 else 1)
     if(count>=period and frequency>0):
-        #print("Sent telemetry flow exists", frequency)
         socket.send(telemetry_pkt)
         count = 0
     else:
-        #print("Sent normal packet flow exists")
         socket.send(normal_pkt)
 
     return count
@@ -56,6 +54,7 @@ def main(args):
 
     flow_id = "1"   # 5-tuple hash
 
+
     with open(args['frequency_file'],"r") as f_file:
         try:
             frequency_dict = json.load(f_file)
@@ -64,7 +63,10 @@ def main(args):
         last_modified = os.path.getmtime(args['frequency_file'])
 
     s = conf.L2socket(iface='eth0')
-    print("Total ct = ", args['timeout']/args['interval'])
+
+    time.sleep(args['wait_time'])
+
+
     start = time.time()
     while time.time() - start < args['timeout']:
         try:
@@ -72,7 +74,6 @@ def main(args):
             if(flow_id in frequency_dict):
                 count = send_telemtry_or_normal_pkt(s, count, frequency_dict.get(flow_id), telemetry_pkt, normal_pkt)
             else:
-                #print("Sent telemetry packet")
                 s.send(telemetry_pkt)
 
             time.sleep(args['interval'])
@@ -90,11 +91,18 @@ def parse_args():
     parser.add_argument("-i", "--interval", help="Interval between packets", required=True, type=float)
     parser.add_argument("-s", "--packet_size", help="Packet size", required=True, type=float)
     parser.add_argument("-t", "--timeout", help="Packet dispatch period", required=True, type=float)
-
-
+    parser.add_argument("-w", "--wait_time", help="Wait time before sending packets", required=False, default=0, type=float)
 
     return vars(parser.parse_args())
 
 if __name__ == '__main__':
+    log_file = open('log.txt', "a")
+    log_file.flush()
+    try:
+        log_file.write("Started sending pkts")
+    except Exception as e:
+        log_file.write(f"Error start: {e}\n")
+
+        
     args = parse_args()
     main(args)

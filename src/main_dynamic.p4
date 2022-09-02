@@ -4,6 +4,7 @@
 
 #include "include/headers.p4"
 #include "include/parsers.p4"
+#include "include/checksum.p4"
 
 /***************************************************************/
 
@@ -19,8 +20,8 @@ const bit<8> beta = 1; //divisor por shift logo é o mesmo que 2
 const bit<64> div = 0x1999999A; /// used to divide a number by 10
 const bit<64> div_100 = 0x28F5C29;
 
-const bit<32> mean_n = 4;
-const bit<8> div_shift = 2;
+const bit<32> mean_n = 8;
+const bit<8> div_shift = 3;
 const bit<32> base_delta = 300;
 
 
@@ -28,37 +29,23 @@ const bit<32> base_delta = 300;
 *********************** R E G I S T E R S  *******************************
 *************************************************************************/
 
-// Each flow has its own metrics
+register<bit<32>>(MAX_PORTS) pres_byte_cnt_reg;
+register<bit<32>>(MAX_PORTS) past_byte_cnt_reg;
+register<bit<32>>(MAX_PORTS) packets_cnt_reg;
 
-register<bit<32>>(MAX_FLOWS) telemetry_byte_cnt_reg;
-register<bit<32>>(MAX_FLOWS) pres_byte_cnt_reg;
-register<bit<32>>(MAX_FLOWS) past_byte_cnt_reg;
+register<time_t>(MAX_PORTS) previous_insertion_reg;
 
-register<bit<32>>(MAX_FLOWS) packets_cnt_reg;
+register<bit<32>>(MAX_PORTS) telemetry_byte_cnt_reg;
 
-register<time_t>(MAX_FLOWS) obs_last_seen_reg;
+register<time_t>(MAX_PORTS) obs_last_seen_reg;
 
-register<time_t>(MAX_FLOWS) previous_insertion_reg;
-register<time_t>(MAX_FLOWS) tel_insertion_window_reg;
+register<time_t>(MAX_PORTS) tel_insertion_window_reg;
 
-register<bit<32>>(MAX_FLOWS) delta_reg;
-register<bit<32>>(MAX_FLOWS) n_last_values_reg;
-register<bit<32>>(MAX_FLOWS) count_reg;
-
+register<bit<32>>(MAX_PORTS) delta_reg;
+register<bit<32>>(MAX_PORTS) n_last_values_reg;
+register<bit<32>>(MAX_PORTS) count_reg;
 
 
-/*************************************************************************
-************   C H E C K S U M    V E R I F I C A T I O N   *************
-*************************************************************************/
-
-control MyVerifyChecksum(inout headers hdr, inout metadata meta){
-    apply {  }
-}
-
-
-/*************************************************************************
-**************  I N G R E S S   P R O C E S S I N G   *******************
-*************************************************************************/
 
 
 time_t max(in time_t v1,in time_t v2){
@@ -72,25 +59,17 @@ time_t min(in time_t v1, in time_t v2){
 }
 
 
-void five_tuple_hash(inout headers hdr, inout metadata meta){
-    bit<32> hash_res;
 
-    meta.flow_id =  MAX_FLOWS+1;
 
-    if(hdr.ipv4.isValid() && hdr.udp.isValid()){
-        hash(hash_res, HashAlgorithm.crc32, 32w0,
-                {hdr.ipv4.src_addr, hdr.ipv4.dst_addr, hdr.udp.dst_port, hdr.ipv4.protocol}, (bit<32>)MAX_FLOWS);
-
-        meta.flow_id = hash_res;
-    }
-
-}
+/*************************************************************************
+**************  I N G R E S S   P R O C E S S I N G   *******************
+*************************************************************************/
 
 
 void update_deltas(inout metadata meta, in bit<32> comparator, inout bit<32> delta){
     bit<32> ct; bit<32> sum;
-    count_reg.read(ct, meta.flow_id);
-    n_last_values_reg.read(sum, meta.flow_id);
+    count_reg.read(ct, meta.port_id);
+    n_last_values_reg.read(sum, meta.port_id);
 
     if(ct==mean_n){
         bit<32> mean; bit<32> old_m;
@@ -98,15 +77,15 @@ void update_deltas(inout metadata meta, in bit<32> comparator, inout bit<32> del
 
         delta = (bit<32>)((div*(bit<64>)mean)>>32);
 
-        delta_reg.write(meta.flow_id, delta);
+        delta_reg.write(meta.port_id, delta);
         sum = 0;
         ct = 0;
     }
 
     sum = sum + comparator; ct = ct + 1;
 
-    n_last_values_reg.write(meta.flow_id, sum);
-    count_reg.write(meta.flow_id, ct);
+    n_last_values_reg.write(meta.port_id, sum);
+    count_reg.write(meta.port_id, ct);
 }
 
 
@@ -116,20 +95,20 @@ void update_telemetry_insertion_time(inout metadata meta, inout standard_metadat
                                 in bit<32> pres_amt_bytes, inout bit<32> delta){
     time_t obs_last_seen; time_t tel_insertion_window;
 
-    obs_last_seen_reg.read(obs_last_seen, meta.flow_id);
-    tel_insertion_window_reg.read(tel_insertion_window, meta.flow_id);
+    obs_last_seen_reg.read(obs_last_seen, meta.port_id);
+    tel_insertion_window_reg.read(tel_insertion_window, meta.port_id);
     if(tel_insertion_window == 0){
         tel_insertion_window = tel_insertion_min_window;
-        tel_insertion_window_reg.write(meta.flow_id, tel_insertion_window);
+        tel_insertion_window_reg.write(meta.port_id, tel_insertion_window);
     }
 
     bit<32> past_amt_bytes;
-    past_byte_cnt_reg.read(past_amt_bytes, meta.flow_id);
+    past_byte_cnt_reg.read(past_amt_bytes, meta.port_id);
 
     time_t now = standard_metadata.ingress_global_timestamp;
     if(obs_last_seen == 0){
         obs_last_seen = now;
-        obs_last_seen_reg.write(meta.flow_id, now);
+        obs_last_seen_reg.write(meta.port_id, now);
     }
 
     if(now - obs_last_seen >= obs_window){
@@ -142,11 +121,11 @@ void update_telemetry_insertion_time(inout metadata meta, inout standard_metadat
 
         update_deltas(meta, pres_amt_bytes, delta);
 
-        past_byte_cnt_reg.write(meta.flow_id, pres_amt_bytes);
-        pres_byte_cnt_reg.write(meta.flow_id, 0);
+        past_byte_cnt_reg.write(meta.port_id, pres_amt_bytes);
+        pres_byte_cnt_reg.write(meta.port_id, 0);
 
-        tel_insertion_window_reg.write(meta.flow_id, tel_insertion_window);
-        obs_last_seen_reg.write(meta.flow_id, now);
+        tel_insertion_window_reg.write(meta.port_id, tel_insertion_window);
+        obs_last_seen_reg.write(meta.port_id, now);
     }
 }
 
@@ -182,8 +161,8 @@ control MyIngress(inout headers hdr,
 
 
     action clone_pkt() {
-        clone_preserving_field_list(CloneType.I2E, REPORT_MIRROR_SESSION_ID, COPY_INDEX);
         meta.cloned = 1;
+        clone_preserving_field_list(CloneType.I2E, REPORT_MIRROR_SESSION_ID, COPY_INDEX);
     }
 
     table clone_I2E{
@@ -202,35 +181,56 @@ control MyIngress(inout headers hdr,
             ipv4_lpm.apply();
 
             if(hdr.udp.isValid()){
-                five_tuple_hash(hdr, meta);
+                //five_tuple_hash(hdr, meta);
 
-                if(meta.flow_id < (bit<32>)MAX_FLOWS){
+                meta.port_id = 0; //(bit<32>)standard_metadata.egress_spec;
+
+                if(meta.port_id < (bit<32>)MAX_PORTS){
                     bit<32> amt_packets;bit<32> tel_amt_bytes;bit<32> total_amt_bytes;
 
-                    packets_cnt_reg.read(amt_packets, meta.flow_id);
+                    packets_cnt_reg.read(amt_packets, meta.port_id);
                     amt_packets = amt_packets+1;
-                    packets_cnt_reg.write(meta.flow_id, amt_packets);
+                    packets_cnt_reg.write(meta.port_id, amt_packets);
 
-                    pres_byte_cnt_reg.read(total_amt_bytes, meta.flow_id);  // Used for update function
+                    pres_byte_cnt_reg.read(total_amt_bytes, meta.port_id);  // Used for update function
                     total_amt_bytes = total_amt_bytes+standard_metadata.packet_length;
-                    pres_byte_cnt_reg.write(meta.flow_id,  total_amt_bytes);
+                    pres_byte_cnt_reg.write(meta.port_id,  total_amt_bytes);
 
-                    telemetry_byte_cnt_reg.read(tel_amt_bytes, meta.flow_id);   // Used for telemetry purpose
+                    telemetry_byte_cnt_reg.read(tel_amt_bytes, meta.port_id);   // Used for telemetry purpose
                     tel_amt_bytes = tel_amt_bytes+standard_metadata.packet_length;
-                    telemetry_byte_cnt_reg.write(meta.flow_id,  tel_amt_bytes);
+                    telemetry_byte_cnt_reg.write(meta.port_id,  tel_amt_bytes);
 
                     bit<32> delta = 0;
-                    delta_reg.read(delta, meta.flow_id);
+                    delta_reg.read(delta, meta.port_id);
 
                     if(delta == 0){
                         delta = base_delta;
-                        delta_reg.write(meta.flow_id, delta);
+                        delta_reg.write(meta.port_id, delta);
                     }
 
                     /** Observation window, updates gather window value*/
                     update_telemetry_insertion_time(meta, standard_metadata, total_amt_bytes, delta);
 
-                    if(hdr.telemetry.isValid())
+                    time_t previous_insertion; time_t tel_insertion_window;
+                    previous_insertion_reg.read(previous_insertion, meta.port_id);
+                    tel_insertion_window_reg.read(tel_insertion_window, meta.port_id);
+
+                    time_t now = standard_metadata.ingress_global_timestamp;
+                    if(previous_insertion == 0){
+                        previous_insertion = now;
+                        previous_insertion_reg.write(meta.port_id, now);
+                    }
+
+                    if(now - previous_insertion >= tel_insertion_window){
+                        meta.insert_tel = 1;
+
+                        meta.last_time = previous_insertion;
+                        meta.curr_time = now;
+                        previous_insertion_reg.write(meta.port_id, now);
+                    }
+
+
+                    if(hdr.telemetry.isValid() || meta.insert_tel == 1)
                         clone_I2E.apply();
                 }
             }
@@ -244,52 +244,39 @@ control MyIngress(inout headers hdr,
 
 
 
-
-/* If 'tel_insertion_window' is smaller or equal to the time elapsed since last time data was added to tos field, do it again
-    Also divides data if data cant be represented with 8 bits */
-void insert_telemetry(inout headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata,
-                        in bit<32> tel_amt_bytes){
-        time_t previous_insertion; time_t tel_insertion_window;
-        previous_insertion_reg.read(previous_insertion, meta.flow_id);
-        tel_insertion_window_reg.read(tel_insertion_window, meta.flow_id);
-
-        time_t now = standard_metadata.egress_global_timestamp;
-        if(previous_insertion == 0){
-            previous_insertion = now;
-            previous_insertion_reg.write(meta.flow_id, now);
+void insert_telemetry(inout headers hdr, inout metadata meta,in bit<32> tel_amt_bytes){
+        if(!hdr.telemetry.isValid()){
+            hdr.telemetry.setValid();
+            hdr.telemetry.hop_cnt = 0;
         }
 
-        if(now - previous_insertion >= tel_insertion_window || hdr.telemetry.isValid()){
-            if(!hdr.telemetry.isValid()){
-                hdr.telemetry.setValid();
-                hdr.telemetry.hop_cnt = 0;
-            }
+        if(hdr.telemetry.hop_cnt < MAX_HOPS){
+            hdr.telemetry.hop_cnt = hdr.telemetry.hop_cnt + 1;
+            hdr.ethernet.ether_type = TYPE_TELEMETRY;
 
-            if(hdr.telemetry.hop_cnt < MAX_HOPS){
-                hdr.telemetry.hop_cnt = hdr.telemetry.hop_cnt + 1;
-                hdr.ethernet.ether_type = TYPE_TELEMETRY;
+            hdr.telemetry.next_header_type = TYPE_IPV4;
+            hdr.telemetry.telemetry_data_sz = TEL_DATA_SZ;
 
-                hdr.telemetry.next_header_type = TYPE_IPV4;
-                hdr.telemetry.telemetry_data_sz = TEL_DATA_SZ;
+            hdr.tel_data.push_front(1);
+            hdr.tel_data[0].setValid();
 
-                hdr.tel_data.push_front(1);
-                hdr.tel_data[0].setValid();
+            if (hdr.telemetry.hop_cnt == 1)
+                hdr.tel_data[0].bos = 1;
+            else
+                hdr.tel_data[0].bos = 0;
 
-                if (hdr.telemetry.hop_cnt == 1)
-                    hdr.tel_data[0].bos = 1;
-                else
-                    hdr.tel_data[0].bos = 0;
-
-                hdr.tel_data[0].sw_id = meta.sw_id;
-                hdr.tel_data[0].flow_id = meta.flow_id;
+            hdr.tel_data[0].sw_id = meta.sw_id;
+            hdr.tel_data[0].port_id = meta.port_id;
+            if(hdr.telemetry.hop_cnt>1)
+                hdr.tel_data[0].amt_bytes = tel_amt_bytes - (bit<32>)(hdr.telemetry.hop_cnt-1)*(TEL_DATA_SZ) - TEL_H_SZ;
+            else
                 hdr.tel_data[0].amt_bytes = tel_amt_bytes;
-                hdr.tel_data[0].last_time = previous_insertion;
-                hdr.tel_data[0].curr_time = now; // bit<64>)(now - previous_insertion);
+
+            hdr.tel_data[0].last_time = meta.last_time;
+            hdr.tel_data[0].curr_time = meta.curr_time; // (bit<64>)(now - previous_insertion);
 
 
-                telemetry_byte_cnt_reg.write(meta.flow_id, 0);
-                previous_insertion_reg.write(meta.flow_id, now);
-            }
+            telemetry_byte_cnt_reg.write(meta.port_id, 0);
         }
 }
 
@@ -338,62 +325,36 @@ control MyEgress(inout headers hdr,
 
     apply{
         if(hdr.ipv4.isValid() && hdr.udp.isValid()){
-            five_tuple_hash(hdr, meta);
+            sw_id.apply();
 
-            if(meta.flow_id < (bit<32>)MAX_FLOWS){
-                sw_id.apply();
+            bit<32> tel_bytes;
+            telemetry_byte_cnt_reg.read(tel_bytes, meta.port_id);
 
-                bit<32> tel_bytes;
-                telemetry_byte_cnt_reg.read(tel_bytes, meta.flow_id);
+            if(standard_metadata.instance_type == PKT_INSTANCE_TYPE_INGRESS_CLONE){
+                clone_lpm.apply();
 
-                if(standard_metadata.instance_type == PKT_INSTANCE_TYPE_INGRESS_CLONE){
-                    clone_lpm.apply();
+                 /** Collects metadata */
+                if(meta.insert_tel == 1)
+                    insert_telemetry(hdr, meta, tel_bytes);
 
-                     /** Collects metadata */
-                    insert_telemetry(hdr, meta, standard_metadata, tel_bytes);
+                bit<32> truncate_sz = L2_HEADERS_SZ+(bit<32>)hdr.telemetry.hop_cnt*TEL_DATA_SZ;
 
-                    bit<32> truncate_sz = L2_HEADERS_SZ+(bit<32>)hdr.telemetry.hop_cnt*TEL_DATA_SZ;
-
-                    truncate(truncate_sz); // Remove user data from clone packet
-                    hdr.ipv4.total_len = 28;
-                    hdr.udp.len = 8;
-                }else if(standard_metadata.instance_type == PKT_INSTANCE_TYPE_NORMAL){
-                    // If switch is a transit switch, check if telemetry needs to be added
-                    // If its a sink switch, remove telemetry headers
-                    if(meta.cloned == 0)
-                        insert_telemetry(hdr, meta, standard_metadata, tel_bytes);
-                    else if(meta.cloned == 1){
-                        hdr.telemetry.setInvalid();
-                        hdr.tel_data.pop_front(MAX_HOPS);
-                        hdr.ethernet.ether_type = TYPE_IPV4;
-                    }
+                truncate(truncate_sz); // Remove user data from clone packet
+                hdr.ipv4.total_len = 28;
+                hdr.udp.len = 8;
+            }else if(standard_metadata.instance_type == PKT_INSTANCE_TYPE_NORMAL){
+                // If switch is a transit switch, check if telemetry needs to be added
+                // If its a sink switch, remove telemetry headers
+                if(meta.cloned == 0 && meta.insert_tel == 1)
+                    insert_telemetry(hdr, meta, tel_bytes);
+                else if(meta.cloned == 1){
+                    hdr.telemetry.setInvalid();
+                    hdr.tel_data.pop_front(MAX_HOPS);
+                    hdr.ethernet.ether_type = TYPE_IPV4;
                 }
             }
+                
         }
-    }
-}
-
-/*************************************************************************
-*************   C H E C K S U M    C O M P U T A T I O N   **************
-*************************************************************************/
-
-control MyComputeChecksum(inout headers  hdr, inout metadata meta){
-     apply {
-	update_checksum(
-	    hdr.ipv4.isValid(),
-            { hdr.ipv4.version,
-	          hdr.ipv4.ihl,
-              hdr.ipv4.tos,
-              hdr.ipv4.total_len,
-              hdr.ipv4.identification,
-              hdr.ipv4.flags,
-              hdr.ipv4.frag_offset,
-              hdr.ipv4.ttl,
-              hdr.ipv4.protocol,
-              hdr.ipv4.src_addr,
-              hdr.ipv4.dst_addr },
-            hdr.ipv4.hdr_checksum,
-            HashAlgorithm.csum16);
     }
 }
 

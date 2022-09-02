@@ -21,9 +21,9 @@ def main(args):
     pkt = Ether(dst='ff:ff:ff:ff:ff:ff', src=get_if_hwaddr('eth0')) / \
                 IP(dst=args['dst_ip'])/UDP(sport=args['dport'],dport=args['dport'])/Raw(load=string_val)
    
-    #print("Theoretical pkts count: ",args['timeout']/args['interval'])
-
     s = conf.L2socket(iface='eth0')
+    time.sleep(args['wait_time'])
+
     start = time.time()
     while time.time() - start < args['timeout']:
         try:
@@ -33,7 +33,6 @@ def main(args):
         except KeyboardInterrupt:
             sys.exit()
 
-    print("Real pkts count: ", count)
 
 
 def parse_args():
@@ -43,6 +42,8 @@ def parse_args():
     parser.add_argument("-i", "--interval", help="Interval between packets", required=True, type=float)
     parser.add_argument("-s", "--packet_size", help="Packet size", required=True, type=int)
     parser.add_argument("-t", "--timeout", help="Packet dispatch period", required=True, type=float)
+    parser.add_argument("-w", "--wait_time", help="Wait time before sending packets", required=False, default=0, type=float)
+
 
 
 
