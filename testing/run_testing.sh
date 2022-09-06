@@ -2,14 +2,14 @@
 
 cd ../src
  
-# make clean
-# make P4_SRC=main_static.p4 TEST_JSON=../testing/test_config_files/static.json
-
-# make clean
-# make P4_SRC=main_dynamic.p4 TEST_JSON=../testing/test_config_files/dynamic.json
+make clean
+make P4_SRC=main_static.p4 TEST_JSON=../testing/test_config_files/static_tcpreplay.json
 
 make clean
-make P4_SRC=main_sINT.p4 TEST_JSON=../testing/test_config_files/sINT.json
+make P4_SRC=main_dynamic.p4 TEST_JSON=../testing/test_config_files/dynamic_tcpreplay.json
+
+make clean
+make P4_SRC=main_sINT.p4 TEST_JSON=../testing/test_config_files/sINT_tcpreplay.json
 
 
 cd ../testing/python_scripts
