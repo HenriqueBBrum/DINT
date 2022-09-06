@@ -15,7 +15,7 @@ from telemetry_headers import *
 
 
 
-# Checks if a file has been modified. If it has, update frequency dictionary
+# Checks if a file has been modified. If it has, update frequency dictionary 
 def check_for_file_change(frequency_file, last_modified, frequency_dict):
     modified = os.path.getmtime(frequency_file)
     if(modified != last_modified):
@@ -52,7 +52,7 @@ def main(args):
     normal_pkt = Ether(dst='ff:ff:ff:ff:ff:ff', src=get_if_hwaddr('eth0')) / \
                 IP(dst=args['dst_ip'])/UDP(sport=args['dport'],dport=args['dport'])/Raw(load=string_val)
 
-    flow_id = "1"   # 5-tuple hash
+    flow_id = "1"   # 5-tuple hash 
 
 
     with open(args['frequency_file'],"r") as f_file:
@@ -67,12 +67,23 @@ def main(args):
     time.sleep(args['wait_time'])
 
 
+    log_file = open('log.txt', "a")
+    log_file.flush()
+    try:
+        log_file.write("Started sending pkts sINT"+ str(args['wait_time']))
+    except Exception as e:
+        log_file.write(f"Error send: {e}\n")
+
+
     start = time.time()
     while time.time() - start < args['timeout']:
         try:
             frequency_dict = check_for_file_change(args['frequency_file'], last_modified, frequency_dict)
             if(flow_id in frequency_dict):
-                count = send_telemtry_or_normal_pkt(s, count, frequency_dict.get(flow_id), telemetry_pkt, normal_pkt)
+                try:
+                    count = send_telemtry_or_normal_pkt(s, count, frequency_dict.get(flow_id), telemetry_pkt, normal_pkt)
+                except Exception as e:
+                    log_file.write(f"Error send: {e}\n")
             else:
                 s.send(telemetry_pkt)
 
@@ -96,13 +107,5 @@ def parse_args():
     return vars(parser.parse_args())
 
 if __name__ == '__main__':
-    log_file = open('log.txt', "a")
-    log_file.flush()
-    try:
-        log_file.write("Started sending pkts")
-    except Exception as e:
-        log_file.write(f"Error start: {e}\n")
-
-        
     args = parse_args()
     main(args)

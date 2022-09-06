@@ -126,12 +126,17 @@ def plot_graphs(output_folder, traffic_type, sw_id, total_time, data, unit):
 
     rmse_title = 'Measurement Error - '+'SW'+sw_id+' | '+total_time+'s'
     rmse_filepath = output_folder+traffic_type+'_RMSE_'+sw_id+'_'+total_time.split('.')[0]+'s.png'
-    plot_bar_graph(rmse_filepath, rmse_title, 'NRMSE (%)', 1, *crete_bar_graph_rects(data, 1, 100), "3")
+    plot_bar_graph(rmse_filepath, rmse_title, 'NRMSE (%)', 3, *crete_bar_graph_rects(data, 1, 100), "3")
 
 
     byte_cnt_title = 'Telemetry Overhead - '+'SW'+sw_id+' | '+total_time+'s'
     byte_cnt_filepath = output_folder+traffic_type+'s_Tel_Overhead_'+sw_id+'_'+total_time.split('.')[0]+'s.png'
-    plot_bar_graph(byte_cnt_filepath, byte_cnt_title, 'Bytes ('+unit.upper()+')', 250, *crete_bar_graph_rects(data, 2, metric_unit[unit]), "0")
+    plot_bar_graph(byte_cnt_filepath, byte_cnt_title, 'Bytes ('+unit.upper()+')', 300, *crete_bar_graph_rects(data, 2, metric_unit[unit]), "0")
+
+
+    area_between_title = 'Area Under the Curve - '+'SW'+sw_id+' | '+total_time+'s'
+    area_between_filepath = output_folder+traffic_type+'s_Area_Between_'+sw_id+'_'+total_time.split('.')[0]+'s.png'
+    plot_bar_graph(area_between_filepath, area_between_title, 'MBits', 0.1, *crete_bar_graph_rects(data, 3, metric_unit[unit]), "3")
 
   
 
@@ -160,17 +165,20 @@ def main():
             for row in data:
                 f_key = row['sw_id']+"_"+row['experiment_time']
                 s_key = row['sw_type']+"_"+row['min_telemetry_push_time']
+
                 if (f_key+s_key) in my_dict:
-                    count, rmse_lst, byte_cnt_lst, previous_experiment_time = my_dict[(f_key+s_key)]
+                    count, rmse_lst, byte_cnt_lst, area_between_lst, previous_experiment_time = my_dict[(f_key+s_key)]
                     rmse_lst.append(float(row['rmse']))
                     byte_cnt_lst.append(float(row['telemetry_byte_count']))
+                    area_between_lst.append(float(row['area_between']))
+
                     updated_value = (float(count+1),rmse_lst, byte_cnt_lst,
                                 previous_experiment_time+float(row['experiment_time']))
 
                     my_dict[(f_key+s_key)] = updated_value
                     graph_dict[f_key][s_key] = updated_value
                 else:
-                    value = (1, [float(row['rmse'])], [float(row['telemetry_byte_count'])], float(row['experiment_time']))
+                    value = (1, [float(row['rmse'])], [float(row['telemetry_byte_count'])],  [float(row['area_between'])], float(row['experiment_time']))
                     my_dict[(f_key+s_key)] = value
                     if f_key not in graph_dict:
                         graph_dict[f_key] = {}
