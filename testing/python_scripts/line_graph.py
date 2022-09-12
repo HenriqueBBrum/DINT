@@ -17,6 +17,7 @@ microseg = 1000000
 telemetry_data_sz = 21
 telelemetry_header_sz = 4
 
+
 # Reads real data from csv file to find the amount of bytes transported each second
 def real_traffic_data(filepath, unit, experiment_duration):
     xy = {0.0: 0.0}
@@ -224,7 +225,7 @@ def main():
         real_traffic_file = glob.glob(args['file_folder']+sw_type+"_real*.csv")[0]
         real_xy = real_traffic_data(real_traffic_file, args['unit'], args['experiment_duration'])
         real_xy_ = real_traffic_data_(real_traffic_file, telemetry_x, args['unit'], args['experiment_duration'])
-       
+
         merge = {**real_xy_, **real_xy}
 
         sorted_merge = dict(sorted(merge.items()))
