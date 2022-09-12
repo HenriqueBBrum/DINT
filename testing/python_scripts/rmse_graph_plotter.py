@@ -122,7 +122,7 @@ def plot_graphs(output_folder, traffic_type, sw_id, total_time, data, unit):
 
     rmse_title = 'Measurement Error Expanded - '+'SW'+sw_id+' | '+total_time+'s'
     rmse_filepath = output_folder+traffic_type+'_RMSE_E_'+sw_id+'_'+total_time.split('.')[0]+'s.png'
-    plot_bar_graph(rmse_filepath, rmse_title, 'NRMSE (%)', 2, *crete_bar_graph_rects(data, 1, 100), "2")
+    plot_bar_graph(rmse_filepath, rmse_title, 'NRMSE (%)', 2, *crete_bar_graph_rects(data, 1, 100), "1")
 
 
     byte_cnt_title = 'Telemetry Overhead - '+'SW'+sw_id+' | '+total_time+'s'
