@@ -68,7 +68,8 @@ def crete_bar_graph_rects(data, pos, mult):
     return labels, rects, sw_type_count
 
 
-def plot_bar_graph(filepath, title, ylabel, ticks_freq, labels, rects, sw_type_count, label_decimal_house):
+def plot_bar_graph(filepath, title, ylabel, y_tick_step, labels, rects, sw_type_count, label_decimal_house):
+
     fig, ax = plt.subplots()
     labels = list(dict.fromkeys(labels))
 
@@ -76,23 +77,18 @@ def plot_bar_graph(filepath, title, ylabel, ticks_freq, labels, rects, sw_type_c
     for k, v in sw_type_count.items():
         sw_type_count_x_map[k] = np.arange(1 if v == 0 else v)
 
+
     width=0.20
     ct = 0
-    multi = -1
-    pos = 0
 
     for k, v in rects.items():
-        x = sw_type_count_x_map[k]
-        r = ax.bar(x-width*multi*pos, v[0], width, yerr=v[1], label=k.capitalize(), hatch='\\', align='edge', capsize=3, 
-            error_kw={'elinewidth':1, 'alpha':0.65})
-       
-        if ct%2 == 0:
-            pos = pos +1
-        else:
-            multi = multi*-1
-
         ct = ct +1
 
+        x = sw_type_count_x_map[k]
+        r = ax.bar(x+width*ct, v[0], width, yerr=v[1], label=k.capitalize(), hatch='\\', align='edge', capsize=3, 
+            error_kw={'elinewidth':1, 'alpha':0.65})
+
+   
 
     add_value_labels(ax, label_decimal_house, y_spacing=-2)
 
@@ -107,14 +103,14 @@ def plot_bar_graph(filepath, title, ylabel, ticks_freq, labels, rects, sw_type_c
     
     ax.set_ylim([0, max_+0.5*max_])
     start, end = ax.get_ylim()
-    ax.yaxis.set_ticks(np.arange(start, end, ticks_freq))
+    ax.yaxis.set_ticks(np.arange(start, end, y_tick_step))
 
-    ax.set_xticklabels(labels)
-    ax.set_xticks(x)
+    print(x, list(dict.fromkeys(labels)))
+    ax.set_xticks(np.arange(0.5, len(labels), 1), list(dict.fromkeys(labels)))
     ax.set_xlabel('Telemetry push time (s)')
 
     h1, l1 = ax.get_legend_handles_labels()
-    ax.legend(h1, l1, loc='upper center')
+    ax.legend(h1, l1, loc='upper right')
 
     fig.tight_layout()  # otherwise the right y-label is slightly clipped
     fig.savefig(filepath)
@@ -124,19 +120,19 @@ def plot_graphs(output_folder, traffic_type, sw_id, total_time, data, unit):
     if len(data) <= 0:
         return
 
-    rmse_title = 'Measurement Error - '+'SW'+sw_id+' | '+total_time+'s'
-    rmse_filepath = output_folder+traffic_type+'_RMSE_'+sw_id+'_'+total_time.split('.')[0]+'s.png'
-    plot_bar_graph(rmse_filepath, rmse_title, 'NRMSE (%)', 3, *crete_bar_graph_rects(data, 1, 100), "3")
+    rmse_title = 'Measurement Error Expanded - '+'SW'+sw_id+' | '+total_time+'s'
+    rmse_filepath = output_folder+traffic_type+'_RMSE_E_'+sw_id+'_'+total_time.split('.')[0]+'s.png'
+    plot_bar_graph(rmse_filepath, rmse_title, 'NRMSE (%)', 2, *crete_bar_graph_rects(data, 1, 100), "2")
 
 
     byte_cnt_title = 'Telemetry Overhead - '+'SW'+sw_id+' | '+total_time+'s'
     byte_cnt_filepath = output_folder+traffic_type+'s_Tel_Overhead_'+sw_id+'_'+total_time.split('.')[0]+'s.png'
-    plot_bar_graph(byte_cnt_filepath, byte_cnt_title, 'Bytes ('+unit.upper()+')', 300, *crete_bar_graph_rects(data, 2, metric_unit[unit]), "0")
+    plot_bar_graph(byte_cnt_filepath, byte_cnt_title, 'Bytes ('+unit.upper()+')', 500, *crete_bar_graph_rects(data, 2, metric_unit[unit]), "0")
 
 
-    area_between_title = 'Area Under the Curve - '+'SW'+sw_id+' | '+total_time+'s'
-    area_between_filepath = output_folder+traffic_type+'s_Area_Between_'+sw_id+'_'+total_time.split('.')[0]+'s.png'
-    plot_bar_graph(area_between_filepath, area_between_title, 'MBits', 0.1, *crete_bar_graph_rects(data, 3, metric_unit[unit]), "3")
+    area_between_title = 'Measurement Error Simple - '+'SW'+sw_id+' | '+total_time+'s'
+    area_between_filepath = output_folder+traffic_type+'_RMSE_S_'+sw_id+'_'+total_time.split('.')[0]+'s.png'
+    plot_bar_graph(area_between_filepath, area_between_title, 'NRMSE (%)', 0.5, *crete_bar_graph_rects(data, 3, 100), "2")
 
   
 
@@ -154,11 +150,14 @@ def main():
     args = parse_args()
 
     rmse_and_byte_cnt_files = glob.glob(args['file_folder']+"*.csv")
+    print(rmse_and_byte_cnt_files)
     for f in rmse_and_byte_cnt_files:
         traffic_type = f.split("/")[-1].split(".")[0]
 
         my_dict = OrderedDict()
         graph_dict = OrderedDict()
+
+        min_times = {}
 
         with open(f) as csvfile:
             data = csv.DictReader(csvfile, delimiter=',')
@@ -166,19 +165,21 @@ def main():
                 f_key = row['sw_id']+"_"+row['experiment_time']
                 s_key = row['sw_type']+"_"+row['min_telemetry_push_time']
 
-                if (f_key+s_key) in my_dict:
-                    count, rmse_lst, byte_cnt_lst, area_between_lst, previous_experiment_time = my_dict[(f_key+s_key)]
-                    rmse_lst.append(float(row['rmse']))
-                    byte_cnt_lst.append(float(row['telemetry_byte_count']))
-                    area_between_lst.append(float(row['area_between']))
+                min_times[row['min_telemetry_push_time']] = 1
 
-                    updated_value = (float(count+1),rmse_lst, byte_cnt_lst,
+                if (f_key+s_key) in my_dict:
+                    count, rmse_expanded_list, byte_cnt_lst, rmse_simple_list, previous_experiment_time = my_dict[(f_key+s_key)]
+                    rmse_expanded_list.append(float(row['rmse_expanded']))
+                    byte_cnt_lst.append(float(row['telemetry_byte_count']))
+                    rmse_simple_list.append(float(row['rmse_simple']))
+
+                    updated_value = (float(count+1),rmse_expanded_list, byte_cnt_lst, rmse_simple_list,
                                 previous_experiment_time+float(row['experiment_time']))
 
                     my_dict[(f_key+s_key)] = updated_value
                     graph_dict[f_key][s_key] = updated_value
                 else:
-                    value = (1, [float(row['rmse'])], [float(row['telemetry_byte_count'])],  [float(row['area_between'])], float(row['experiment_time']))
+                    value = (1, [float(row['rmse_expanded'])], [float(row['telemetry_byte_count'])],  [float(row['rmse_simple'])], float(row['experiment_time']))
                     my_dict[(f_key+s_key)] = value
                     if f_key not in graph_dict:
                         graph_dict[f_key] = {}
@@ -186,10 +187,20 @@ def main():
                     else:
                         graph_dict[f_key][s_key] = value
 
-       
         final_dict = OrderedDict()
-        for k, v in graph_dict.items():
-            final_dict[k] = dict(sorted(v.items(), key=lambda item: item[0].split("_")[1], reverse=False))
+        for f_k in graph_dict.keys():
+            ordered_keys = sorted(graph_dict[f_k].keys(), reverse=True)
+            sub = []
+            for i in range(0, len(ordered_keys), len(min_times)):
+                sub.extend(sorted(ordered_keys[i:i+len(min_times)], reverse=False))
+
+            tmp_dict = {}
+            for s_k in sub:
+                tmp_dict[s_k] = graph_dict[f_key][s_k]
+
+
+            final_dict[f_k] = tmp_dict
+
 
         for k, v in final_dict.items():
             sw_id, total_time = k.split('_')
