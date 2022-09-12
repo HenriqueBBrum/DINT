@@ -1,3 +1,0 @@
-sw_type,sw_id,min_telemetry_push_time,experiment_time,packet_count,rmse,telemetry_byte_count
-dynamic,1,1.0,60.0,19,0.15301248839670245,646
-static,1,1.0,60.0,61,0.08584180504945291,2242

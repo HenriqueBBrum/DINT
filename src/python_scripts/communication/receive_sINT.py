@@ -18,8 +18,8 @@ frequency_dict = {}
 previous_tel_data = []
 timer = 0
 
-timeout = 1
-min_frequency = 0.05
+timeout = 0.01
+min_frequency = 0.01
 
 type = 'link'
 
@@ -53,7 +53,7 @@ def insertion_ratio_algorithm(flow_id, tel_data, frequency_file, link_threshold)
 
     count+=1
 
-    print(frequency_dict, timer, count, frequency_dict)
+    #print(frequency_dict, timer, count, frequency_dict)
     if(count == 1):
         timer = time.time()
         rf = min_frequency
@@ -72,7 +72,6 @@ def insertion_ratio_algorithm(flow_id, tel_data, frequency_file, link_threshold)
 
     previous_tel_data = tel_data
     log_file.write("New frequency: "+str(rf)+"\n")
-    # print("New frequency", rf)
 
     if(flow_id in frequency_dict):
         old_rf = frequency_dict[flow_id]
