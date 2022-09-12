@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+# with args
+
 import sys
 sys.path.insert(0, '/home/p4/Documents/Masters/src/python_scripts/communication')
 
