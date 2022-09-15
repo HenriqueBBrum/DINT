@@ -25,17 +25,16 @@ count = 0
 def handle_pkt(pkt, tel_file, log_file):
     global count
 
-    #pkt.show()
     if Telemetry in pkt:
         data_layers = [l for l in expand(pkt) if(l.name=='Telemetry_Data' or l.name=='Telemetry')]
-        print(f"Telemetry header. hop_count:{data_layers[0].hop_cnt}\n")
+        log_file.write(f"Telemetry header. hop_count:{data_layers[0].hop_cnt}\n")
 
         tel_file.write(f"{count}, {data_layers[0].hop_cnt}, {data_layers[0].telemetry_data_sz}\n")
         for sw in data_layers[1:]:
             utilization = 8.0*sw.amt_bytes/(sw.curr_time - sw.last_time)
             tel_file.write(f"{sw.sw_id}, {sw.amt_bytes}, {sw.last_time}, {sw.curr_time}\n")
 
-            print(f"Switch {sw.sw_id}: {sw.amt_bytes}, {sw.last_time}, {sw.curr_time}")
+            log_file.write(f"Switch {sw.sw_id}: {sw.amt_bytes}, {sw.last_time}, {sw.curr_time}")
 
         count+=1
 
@@ -53,7 +52,7 @@ def main(tel_output_file, timeout):
     iface = 'eth0'
     tel_file = open(tel_output_file, "w")
 
-    log_file = open('log.txt', "a")
+    log_file = open('log.txt', "w")
     try:
         log_file.write("Started receiving pkts, output file is:"+tel_output_file+"\n")
     except Exception as e:
@@ -65,7 +64,7 @@ def main(tel_output_file, timeout):
     except Exception as e:
         log_file.write(f"Error in sniff: {e}\n")
 
-    log_file.write("Exiting")
+    log_file.write("\nExiting")
     log_file.close()
 
     tel_file.close()

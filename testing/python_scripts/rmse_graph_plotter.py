@@ -1,15 +1,27 @@
 import matplotlib.pyplot as plt
 import matplotlib.ticker as plticker
-import math
 import csv
 import argparse
-import os
 import numpy as np
 from collections import OrderedDict
 import glob
 
 
 metric_unit = {'b': 1, 'k':1000, 'm':1000000, 'g':1000000000}
+
+
+
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-i', '--file_folder', type=str, help="Folder with input files", required=True)
+    parser.add_argument('-g', '--graphs_output_folder', type=str, help="Folder for output files", required=True)
+    parser.add_argument('-u', '--unit', type=str, help = "Metric Unit (b, k, m, g)", required=False, default="b")
+
+
+    return vars(parser.parse_args())
+
+
 
 
 def add_value_labels(ax, decimal_format=2, spacing=8, y_spacing=0, color='black'):
@@ -69,7 +81,6 @@ def crete_bar_graph_rects(data, pos, mult):
 
 
 def plot_bar_graph(filepath, title, ylabel, y_tick_step, labels, rects, sw_type_count, label_decimal_house):
-
     fig, ax = plt.subplots()
     labels = list(dict.fromkeys(labels))
 
@@ -91,7 +102,6 @@ def plot_bar_graph(filepath, title, ylabel, y_tick_step, labels, rects, sw_type_
    
 
     add_value_labels(ax, label_decimal_house, y_spacing=-2)
-
     ax.set_title(title)
     ax.set_ylabel(ylabel)
     
@@ -103,7 +113,7 @@ def plot_bar_graph(filepath, title, ylabel, y_tick_step, labels, rects, sw_type_
     
     ax.set_ylim([0, max_+0.5*max_])
     start, end = ax.get_ylim()
-    ax.yaxis.set_ticks(np.arange(start, end, y_tick_step))
+    #ax.yaxis.set_ticks(np.arange(start, end, y_tick_step))
 
     print(x, list(dict.fromkeys(labels)))
     ax.set_xticks(np.arange(0.5, len(labels), 1), list(dict.fromkeys(labels)))
@@ -120,37 +130,32 @@ def plot_graphs(output_folder, traffic_type, sw_id, total_time, data, unit):
     if len(data) <= 0:
         return
 
-    rmse_title = 'Measurement Error Expanded - '+'SW'+sw_id+' | '+total_time+'s'
-    rmse_filepath = output_folder+traffic_type+'_RMSE_E_'+sw_id+'_'+total_time.split('.')[0]+'s.png'
-    plot_bar_graph(rmse_filepath, rmse_title, 'NRMSE (%)', 2, *crete_bar_graph_rects(data, 1, 100), "1")
+    rmse_exp_title = 'Measurement Error - '+'SW'+sw_id+' | '+total_time+'s'
+    rmse_exp_fp = output_folder+traffic_type+'_RMSE_E_'+sw_id+'_'+total_time.split('.')[0]+'s.png'
+    plot_bar_graph(rmse_exp_fp, rmse_exp_title, 'NRMSE (%)', 2, *crete_bar_graph_rects(data, 1, 100), "1")
 
 
     byte_cnt_title = 'Telemetry Overhead - '+'SW'+sw_id+' | '+total_time+'s'
-    byte_cnt_filepath = output_folder+traffic_type+'s_Tel_Overhead_'+sw_id+'_'+total_time.split('.')[0]+'s.png'
-    plot_bar_graph(byte_cnt_filepath, byte_cnt_title, 'Bytes ('+unit.upper()+')', 500, *crete_bar_graph_rects(data, 2, metric_unit[unit]), "0")
+    byte_cnt_fp = output_folder+traffic_type+'s_Tel_Overhead_'+sw_id+'_'+total_time.split('.')[0]+'s.png'
+    plot_bar_graph(byte_cnt_fp, byte_cnt_title, 'Bytes ('+unit.upper()+')', 500, *crete_bar_graph_rects(data, 2, metric_unit[unit]), "0")
 
 
-    area_between_title = 'Measurement Error Simple - '+'SW'+sw_id+' | '+total_time+'s'
-    area_between_filepath = output_folder+traffic_type+'_RMSE_S_'+sw_id+'_'+total_time.split('.')[0]+'s.png'
-    plot_bar_graph(area_between_filepath, area_between_title, 'NRMSE (%)', 0.5, *crete_bar_graph_rects(data, 3, 100), "2")
+    simple_rmse_title = 'Measurement Error Simple - '+'SW'+sw_id+' | '+total_time+'s'
+    simple_rmse_fp = output_folder+traffic_type+'_RMSE_S_'+sw_id+'_'+total_time.split('.')[0]+'s.png'
+    plot_bar_graph(simple_rmse_fp, simple_rmse_title, 'NRMSE (%)', 2, *crete_bar_graph_rects(data, 3, 100), "2")
+
+
+    jitter_title = 'Jitter - '+'SW'+sw_id+' | '+total_time+'s'
+    jitter_fp = output_folder+traffic_type+'_Jitter_'+sw_id+'_'+total_time.split('.')[0]+'s.png'
+    plot_bar_graph(jitter_fp, jitter_title, 'Milliseconds', 0.5, *crete_bar_graph_rects(data, 4, 1), "2")
 
   
-
-
-def parse_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-i', '--file_folder', type=str, help="Folder with input files", required=True)
-    parser.add_argument('-g', '--graphs_output_folder', type=str, help="Folder for output files", required=True)
-    parser.add_argument('-u', '--unit', type=str, help = "Metric Unit (b, k, m, g)", required=False, default="b")
-
-
-    return vars(parser.parse_args())
 
 def main():
     args = parse_args()
 
     rmse_and_byte_cnt_files = glob.glob(args['file_folder']+"*.csv")
-    print(rmse_and_byte_cnt_files)
+
     for f in rmse_and_byte_cnt_files:
         traffic_type = f.split("/")[-1].split(".")[0]
 
@@ -168,24 +173,29 @@ def main():
                 min_times[row['min_telemetry_push_time']] = 1
 
                 if (f_key+s_key) in my_dict:
-                    count, rmse_expanded_list, byte_cnt_lst, rmse_simple_list, previous_experiment_time = my_dict[(f_key+s_key)]
+                    count, rmse_expanded_list, byte_cnt_lst, rmse_simple_list, jitter_list, previous_experiment_time = my_dict[(f_key+s_key)]
                     rmse_expanded_list.append(float(row['rmse_expanded']))
                     byte_cnt_lst.append(float(row['telemetry_byte_count']))
                     rmse_simple_list.append(float(row['rmse_simple']))
+                    jitter_list.append(float(row['jitter']))
 
-                    updated_value = (float(count+1),rmse_expanded_list, byte_cnt_lst, rmse_simple_list,
+                    updated_value = (float(count+1),rmse_expanded_list, byte_cnt_lst, rmse_simple_list, jitter_list,
                                 previous_experiment_time+float(row['experiment_time']))
 
                     my_dict[(f_key+s_key)] = updated_value
                     graph_dict[f_key][s_key] = updated_value
                 else:
-                    value = (1, [float(row['rmse_expanded'])], [float(row['telemetry_byte_count'])],  [float(row['rmse_simple'])], float(row['experiment_time']))
+                    value = (1, [float(row['rmse_expanded'])], [float(row['telemetry_byte_count'])],  [float(row['rmse_simple'])],  [float(row['jitter'])],
+                        float(row['experiment_time']))
+                    
                     my_dict[(f_key+s_key)] = value
                     if f_key not in graph_dict:
                         graph_dict[f_key] = {}
                         graph_dict[f_key][s_key] = value
                     else:
                         graph_dict[f_key][s_key] = value
+
+
 
         final_dict = OrderedDict()
         for f_k in graph_dict.keys():

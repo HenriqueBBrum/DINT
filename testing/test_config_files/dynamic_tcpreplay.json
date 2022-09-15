@@ -3,9 +3,8 @@
 	"devices":[
 		{
 			"name":"h2", 
-			"cmds":["rm ../testing/results/pkts_output/dynamic_real_output.pcapng",
-			 "touch ../testing/results/pkts_output/dynamic_real_output.pcapng", "chmod o=rw ../testing/results/pkts_output/dynamic_real_output.pcapng", 
-				"tshark -i eth0 -w ../testing/results/pkts_output/dynamic_real_output.pcapng -f \"ip and udp and port 50000 and not icmp\" -a duration:65 &"]
+			"cmds":["touch ../testing/results/pkts_output/dynamic_real_output.pcapng", "chmod o=rw ../testing/results/pkts_output/dynamic_real_output.pcapng", 
+					"tshark -i eth0 -w ../testing/results/pkts_output/dynamic_real_output.pcapng -f \"ip and udp and port 50000 and not icmp\" -a duration:65 &"]
 		},
 		{
 			"name":"h5",
@@ -13,15 +12,21 @@
 		},
 		{
 			"name":"h1",
-			"cmds":["tcpreplay -i eth0 -K sINT_real_output_h1_mod.pcapng &"]
+			"cmds":["touch ../testing/results/jitter_input/dynamic_h1_real_output.pcapng", "chmod o=rw ../testing/results/jitter_input/dynamic_h1_real_output.pcapng", 
+					"tshark -i eth0 -w ../testing/results/jitter_input/dynamic_h1_real_output.pcapng -f \"ip and udp and port 50000 and not icmp\" -a duration:65 &", "sleep 1",
+					"tcpreplay -i eth0 -K sINT_real_output_h1_mod.pcapng &"]
 		},
 		{
 			"name":"h3",
-			"cmds":["sleep 12", "tcpreplay -i eth0 -K sINT_real_output_h3.pcapng &"]
+			"cmds":["touch ../testing/results/jitter_input/dynamic_h3_real_output.pcapng", "chmod o=rw ../testing/results/jitter_input/dynamic_h3_real_output.pcapng", 
+					"tshark -i eth0 -w ../testing/results/jitter_input/dynamic_h3_real_output.pcapng -f \"ip and udp and port 50000 and not icmp\" -a duration:65 &", "sleep 12",
+					"tcpreplay -i eth0 -K sINT_real_output_h3.pcapng &"]
 		},
 		{
-			"name":"h1",
-			"cmds":["sleep 2", "tcpreplay -i eth0 -K sINT_real_output_h4.pcapng &"]
+			"name":"h4",
+			"cmds":["touch ../testing/results/jitter_input/dynamic_h4_real_output.pcapng", "chmod o=rw ../testing/results/jitter_input/dynamic_h4_real_output.pcapng", 
+					"tshark -i eth0 -w ../testing/results/jitter_input/dynamic_h4_real_output.pcapng -f \"ip and udp and port 50000 and not icmp\" -a duration:65 &", "sleep 2", 
+					"tcpreplay -i eth0 -K sINT_real_output_h4.pcapng &"]
 		}
 	]
 

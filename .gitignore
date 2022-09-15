@@ -1,6 +1,9 @@
 logs
 *.log
 
+
+assets
+
 **/pcaps
 **/build
 
