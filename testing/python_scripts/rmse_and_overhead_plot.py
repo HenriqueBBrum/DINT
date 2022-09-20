@@ -5,6 +5,7 @@ import argparse
 import numpy as np
 from collections import OrderedDict
 import glob
+from ast import literal_eval
 
 
 metric_unit = {'b': 1, 'k':1000, 'm':1000000, 'g':1000000000}
@@ -80,7 +81,7 @@ def crete_bar_graph_rects(data, pos, mult):
     return labels, rects, sw_type_count
 
 
-def plot_bar_graph(filepath, title, ylabel, y_tick_step, labels, rects, sw_type_count, label_decimal_house):
+def plot_bar_graph(filepath, title, ylabel, labels, rects, sw_type_count, label_decimal_house):
     fig, ax = plt.subplots()
     labels = list(dict.fromkeys(labels))
 
@@ -125,6 +126,8 @@ def plot_bar_graph(filepath, title, ylabel, y_tick_step, labels, rects, sw_type_
     fig.tight_layout()  # otherwise the right y-label is slightly clipped
     fig.savefig(filepath)
 
+    
+
 # Review error with unit change. Problem is probably an excess of ticks or labels
 def plot_graphs(output_folder, traffic_type, sw_id, total_time, data, unit):
     if len(data) <= 0:
@@ -132,24 +135,29 @@ def plot_graphs(output_folder, traffic_type, sw_id, total_time, data, unit):
 
     rmse_exp_title = 'Measurement Error - '+'SW'+sw_id+' | '+total_time+'s'
     rmse_exp_fp = output_folder+traffic_type+'_RMSE_E_'+sw_id+'_'+total_time.split('.')[0]+'s.png'
-    plot_bar_graph(rmse_exp_fp, rmse_exp_title, 'NRMSE (%)', 2, *crete_bar_graph_rects(data, 1, 100), "1")
+    plot_bar_graph(rmse_exp_fp, rmse_exp_title, 'NRMSE (%)', *crete_bar_graph_rects(data, 1, 100), "1")
 
 
     byte_cnt_title = 'Telemetry Overhead - '+'SW'+sw_id+' | '+total_time+'s'
-    byte_cnt_fp = output_folder+traffic_type+'s_Tel_Overhead_'+sw_id+'_'+total_time.split('.')[0]+'s.png'
-    plot_bar_graph(byte_cnt_fp, byte_cnt_title, 'Bytes ('+unit.upper()+')', 500, *crete_bar_graph_rects(data, 2, metric_unit[unit]), "0")
+    byte_cnt_fp = output_folder+traffic_type+'_Tel_Overhead_'+sw_id+'_'+total_time.split('.')[0]+'s.png'
+    plot_bar_graph(byte_cnt_fp, byte_cnt_title, 'Bytes ('+unit.upper()+')', *crete_bar_graph_rects(data, 2, metric_unit[unit]), "0")
 
 
-    simple_rmse_title = 'Measurement Error Simple - '+'SW'+sw_id+' | '+total_time+'s'
-    simple_rmse_fp = output_folder+traffic_type+'_RMSE_S_'+sw_id+'_'+total_time.split('.')[0]+'s.png'
-    plot_bar_graph(simple_rmse_fp, simple_rmse_title, 'NRMSE (%)', 2, *crete_bar_graph_rects(data, 3, 100), "2")
+    h1_title = 'H1 Jitter - '+'SW'+sw_id+' | '+total_time+'s'
+    h1_fp = output_folder+traffic_type+'_H1_Jitter_'+sw_id+'_'+total_time.split('.')[0]+'s.png'
+    plot_bar_graph(h1_fp, h1_title, 'Milliseconds', *crete_bar_graph_rects(data, 3, 1), "2")
+
+    h3_title = 'H3 Jitter - '+'SW'+sw_id+' | '+total_time+'s'
+    h3_fp = output_folder+traffic_type+'_H3_Jitter_'+sw_id+'_'+total_time.split('.')[0]+'s.png'
+    plot_bar_graph(h3_fp, h3_title, 'Milliseconds', *crete_bar_graph_rects(data, 4, 1), "2")
+
+    h4_title = 'H4 Jitter - '+'SW'+sw_id+' | '+total_time+'s'
+    h4_fp = output_folder+traffic_type+'_H4_Jitter_'+sw_id+'_'+total_time.split('.')[0]+'s.png'
+    plot_bar_graph(h4_fp, h4_title, 'Milliseconds', *crete_bar_graph_rects(data, 5, 1), "2")
 
 
-    jitter_title = 'Jitter - '+'SW'+sw_id+' | '+total_time+'s'
-    jitter_fp = output_folder+traffic_type+'_Jitter_'+sw_id+'_'+total_time.split('.')[0]+'s.png'
-    plot_bar_graph(jitter_fp, jitter_title, 'Milliseconds', 0.5, *crete_bar_graph_rects(data, 4, 1), "2")
 
-  
+
 
 def main():
     args = parse_args()
@@ -157,7 +165,7 @@ def main():
     rmse_and_byte_cnt_files = glob.glob(args['file_folder']+"*.csv")
 
     for f in rmse_and_byte_cnt_files:
-        traffic_type = f.split("/")[-1].split(".")[0]
+        traffic_type = (f.split("/")[-1].split(".")[0]).split("_")[0]
 
         my_dict = OrderedDict()
         graph_dict = OrderedDict()
@@ -170,22 +178,29 @@ def main():
                 f_key = row['sw_id']+"_"+row['experiment_time']
                 s_key = row['sw_type']+"_"+row['min_telemetry_push_time']
 
+
+                jitter = eval(row['jitter'])
+
+
                 min_times[row['min_telemetry_push_time']] = 1
 
                 if (f_key+s_key) in my_dict:
-                    count, rmse_expanded_list, byte_cnt_lst, rmse_simple_list, jitter_list, previous_experiment_time = my_dict[(f_key+s_key)]
-                    rmse_expanded_list.append(float(row['rmse_expanded']))
-                    byte_cnt_lst.append(float(row['telemetry_byte_count']))
-                    rmse_simple_list.append(float(row['rmse_simple']))
-                    jitter_list.append(float(row['jitter']))
+                    count, rmse_list, byte_cnt_lst, h1_jitter_lst, h3_jitter_lst, h4_jitter_lst, previous_experiment_time = my_dict[(f_key+s_key)]
 
-                    updated_value = (float(count+1),rmse_expanded_list, byte_cnt_lst, rmse_simple_list, jitter_list,
-                                previous_experiment_time+float(row['experiment_time']))
+                    rmse_list.append(float(row['rmse']))
+                    byte_cnt_lst.append(float(row['telemetry_byte_count']))
+                    h1_jitter_lst.append(float(jitter['h1']))
+                    h3_jitter_lst.append(float(jitter['h3']))
+                    h4_jitter_lst.append(float(jitter['h4']))
+
+
+                    updated_value = (float(count+1),rmse_list, byte_cnt_lst, h1_jitter_lst, h3_jitter_lst, h4_jitter_lst, previous_experiment_time+float(row['experiment_time']))
 
                     my_dict[(f_key+s_key)] = updated_value
                     graph_dict[f_key][s_key] = updated_value
                 else:
-                    value = (1, [float(row['rmse_expanded'])], [float(row['telemetry_byte_count'])],  [float(row['rmse_simple'])],  [float(row['jitter'])],
+                    print(jitter['h1'], jitter['h3'], jitter['h4'])
+                    value = (1, [float(row['rmse'])], [float(row['telemetry_byte_count'])], [float(jitter['h1'])], [float(jitter['h3'])], [float(jitter['h4'])],
                         float(row['experiment_time']))
                     
                     my_dict[(f_key+s_key)] = value

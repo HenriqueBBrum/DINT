@@ -12,7 +12,7 @@ const bit<48> tel_insertion_min_window = 250000;
 const bit<48> obs_window = 250000; // 1 Seg = 1000000 microseg
 const bit<48> max_t = 10000000;
 
-const bit<48> alfa = 2;
+const bit<48> alfa = 3;
 const bit<8> beta = 1; //divisor por shift logo é o mesmo que 2
 
 /***************************************************************/
@@ -45,7 +45,20 @@ register<bit<32>>(MAX_PORTS) delta_reg;
 register<bit<32>>(MAX_PORTS) n_last_values_reg;
 register<bit<32>>(MAX_PORTS) count_reg;
 
+// register<bit<1>>(MAX_PORTS) delay;
 
+//  if(delta_bytes > (int<32>)delta || delta_bytes < -1*((int<32>)delta)){
+//             tel_insertion_window = tel_insertion_min_window; // Decreases time if bytes difference was bigger than expected
+//             delay.write(meta.port_id, 1);
+// }else{
+//     bit<1> d;
+//     delay.read(d, meta.port_id);
+//     if(d == 1){
+//         delay.write(meta.port_id, 0);
+//     }else{
+//         tel_insertion_window = min(max_t, (tel_insertion_window*alfa)); // Increases time if bytes difference was smaller than expected
+//     }
+// }
 
 
 time_t max(in time_t v1,in time_t v2){
@@ -116,7 +129,7 @@ void update_telemetry_insertion_time(inout metadata meta, inout standard_metadat
         if(delta_bytes > (int<32>)delta || delta_bytes < -1*((int<32>)delta)){
             tel_insertion_window = tel_insertion_min_window; // Decreases time if bytes difference was bigger than expected
         }else{
-            tel_insertion_window = min(max_t, (tel_insertion_window*alfa)); // Increases time if bytes difference was smaller than expected
+            tel_insertion_window = min(max_t, (tel_insertion_window*alfa)>>beta); // Increases time if bytes difference was smaller than expected
         }
 
         update_deltas(meta, pres_amt_bytes, delta);
