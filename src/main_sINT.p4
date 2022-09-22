@@ -13,7 +13,6 @@
 
 
 register<bit<32>>(MAX_PORTS) pres_byte_cnt_reg;
-register<bit<32>>(MAX_PORTS) past_byte_cnt_reg;
 register<bit<32>>(MAX_PORTS) packets_cnt_reg;
 
 register<time_t>(MAX_PORTS) previous_insertion_reg;
@@ -76,7 +75,8 @@ control MyIngress(inout headers hdr,
                 meta.port_id = 0;//(bit<32>)standard_metadata.egress_spec;
 
                 if(meta.port_id < (bit<32>)MAX_PORTS){
-                    bit<32> amt_packets;bit<32> amt_bytes;
+                    bit<32> amt_packets;
+                    bit<32> amt_bytes;
 
                     packets_cnt_reg.read(amt_packets, meta.port_id);
                     amt_packets = amt_packets+1;
@@ -102,7 +102,6 @@ control MyIngress(inout headers hdr,
 
                         previous_insertion_reg.write(meta.port_id, now);
 
-
                         clone_I2E.apply();
                     }
                 }
@@ -115,9 +114,8 @@ control MyIngress(inout headers hdr,
 ****************  E G R E S S   P R O C E S S I N G   *******************
 *************************************************************************/
 
-void insert_telemetry(inout headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata, in bit<32> pres_amt_bytes){
-       
-        if(hdr.telemetry.isValid() && hdr.telemetry.hop_cnt < MAX_HOPS){
+void insert_telemetry(inout headers hdr, inout metadata meta, in bit<32> pres_amt_bytes){
+        if(hdr.telemetry.hop_cnt < MAX_HOPS){
             hdr.telemetry.hop_cnt = hdr.telemetry.hop_cnt + 1;
             hdr.ethernet.ether_type = TYPE_TELEMETRY;
 
@@ -144,7 +142,6 @@ void insert_telemetry(inout headers hdr, inout metadata meta, inout standard_met
             hdr.tel_data[0].curr_time = meta.curr_time;
 
             pres_byte_cnt_reg.write(meta.port_id, 0);
-            past_byte_cnt_reg.write(meta.port_id, 0);
         }
 }
 
@@ -205,7 +202,7 @@ control MyEgress(inout headers hdr,
                     clone_lpm.apply();
 
                      /** Collects metadata */
-                    insert_telemetry(hdr, meta, standard_metadata, amt_bytes);
+                    insert_telemetry(hdr, meta, amt_bytes);
 
                     bit<32> truncate_sz = L2_HEADERS_SZ+(bit<32>)hdr.telemetry.hop_cnt*TEL_DATA_SZ;
 
@@ -215,8 +212,8 @@ control MyEgress(inout headers hdr,
                 }else if(standard_metadata.instance_type == PKT_INSTANCE_TYPE_NORMAL){
                     // If switch is a transit switch and has telemetry, add tel_data
                     // If its a sink switch, remove telemetry headers
-                    if(meta.cloned == 0)
-                        insert_telemetry(hdr, meta, standard_metadata, amt_bytes);
+                    if(meta.cloned == 0 && hdr.telemetry.isValid())
+                        insert_telemetry(hdr, meta, amt_bytes);
                     else{
                         hdr.telemetry.setInvalid();
                         hdr.tel_data.pop_front(MAX_HOPS);

@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
 
+
+# Generate link utilizaion step plots with matplotlib for each 'type' of switch.
+# This script also calculates the rmse, telemetry overhead and jitter (from all source hosts) of each 'type'
+
 import matplotlib.pyplot as plt
-from scipy.interpolate import interp1d
 from math import sqrt, fabs, ceil
 import csv
 import argparse
-import json
 import os
 import numpy as np
 import pandas as pd
 import glob
 
-metric_unit = {'k':1000, 'm':1000000, 'g':1000000000}
+metric_unit = {'b': 1, 'k':1000, 'm':1000000, 'g':1000000000}
 
 ms = 1000
 microseg = 1000000
@@ -19,7 +21,7 @@ telemetry_data_sz = 21
 telelemetry_header_sz = 4
 
 
-# Arguments for this program
+# Arguments that need to be informed for this program
 def parse_args():
 
     parser = argparse.ArgumentParser(description=f"Send packets to a certain ip and port")
@@ -37,13 +39,14 @@ def parse_args():
     return vars(parser.parse_args())
 
 
-# Reads real data from csv file to find the amount of bytes transported each min_push_time
+# Reads real data from csv file to find the amount of bytes transported each 'min_push_time' or if 'min_push_time' > 1s then each 1s
 def real_traffic_data(filepath, min_push_time,  unit, experiment_duration):
-    min_push_time = 1 if min_push_time >= 1 else min_push_time
+    min_push_time = 1 if min_push_time >= 1 else min_push_time 
     xy = dict.fromkeys(np.arange(0, experiment_duration+min_push_time, min_push_time), 0)
+
+    total_traffic = 0
     grouped_amt_bytes = 0
     current_time = 0
-    previous_time = 0
 
     with open(filepath) as csvfile:
         data = csv.DictReader(csvfile, delimiter=',')
@@ -51,29 +54,28 @@ def real_traffic_data(filepath, min_push_time,  unit, experiment_duration):
             if(float(row['frame.time_relative']) >= experiment_duration):
                 break
 
+            total_traffic+=int(row['frame.len'])
+
             # Keeps adding each pkt size until a second has elapsed. After summing up all bytes in that second, write to list
             if(float(row['frame.time_relative']) - current_time <= min_push_time):
                 grouped_amt_bytes+=int(row['frame.len'])
             else:
                 xy[current_time+min_push_time] = grouped_amt_bytes/(metric_unit[unit]*min_push_time)
               
-                previous_time = current_time
                 current_time = current_time + min_push_time
-
                 grouped_amt_bytes=int(row['frame.len'])
 
         xy[current_time+min_push_time] = grouped_amt_bytes/(metric_unit[unit]*min_push_time)
     
-    return list(xy.keys()), list(xy.values())
+    return list(xy.keys()), list(xy.values()), total_traffic
 
 
-# Reads telemetry data from custom txt file to find the amount of bytes transported each second
-# Format:
+# Reads telemetry data from a custom txt file
+# Txt file Format:
 # id, hop_cnt, telemetry_data_sz
 # hop_id, flow_id, byte_cnt, previous_time, current_time
 # hop_id, flow_id, byte_cnt, previous_time, current_time
-
-def telemetry_traffic_data(telemetry_file, switch_id, unit, experiment_duration):
+def read_telemetry_file(telemetry_file, switch_id, unit, experiment_duration):
     x, y = [0], [0]
     hop_cnt = 0
     prev_time = 0
@@ -104,7 +106,7 @@ def telemetry_traffic_data(telemetry_file, switch_id, unit, experiment_duration)
     return x, y, telemetry_byte_count
 
 
-
+# Returns the telemetry reported link utilization 
 def find_telemetry_traffic(real_x, telemetry_x, telemetry_y):
     i, j = 0, 0
     expanded_y = []
@@ -120,7 +122,7 @@ def find_telemetry_traffic(real_x, telemetry_x, telemetry_y):
     return expanded_y
 
 
-# Plot link utilization graph
+# Plot link utilization graph in 'Scale'Bits pre second
 def plot_line_graph(args, sw_type, real_x, real_y, telemetry_y):
     real_y = [x * 8 for x in real_y]
     telemetry_y = [x * 8 for x in telemetry_y]
@@ -227,10 +229,10 @@ def main():
     for f in telemetry_files:
         sw_type = f.split("/")[-1].split(".")[0].split("_")[0]
 
-        telemetry_x, telemetry_y, telemetry_byte_count = telemetry_traffic_data(f, args['switch_id'], args['unit'], args['experiment_duration'])
+        telemetry_x, telemetry_y, telemetry_byte_count = read_telemetry_file(f, args['switch_id'], args['unit'], args['experiment_duration'])
 
         real_traffic_file = glob.glob(args['input_file_folder']+sw_type+"_real*.csv")[0]
-        real_x, real_y = real_traffic_data(real_traffic_file, args['min_telemetry_push_time'], args['unit'], args['experiment_duration'])
+        real_x, real_y, total_traffic = real_traffic_data(real_traffic_file, args['min_telemetry_push_time'], args['unit'], args['experiment_duration'])
         
 
         if telemetry_x[-1] < real_x[-1]:
@@ -242,7 +244,7 @@ def main():
         plot_line_graph(args, sw_type, real_x, real_y, tel_y)
 
        
-        print(sw_type, len(real_y), args['min_telemetry_push_time'], len(tel_y))
+        print(sw_type, len(real_y), args['min_telemetry_push_time'], len(tel_y), total_traffic*8)
 
         rmse = sqrt(np.square(np.subtract(real_y, tel_y)).mean())
         rmse = rmse/(max(real_y) - min(real_y))

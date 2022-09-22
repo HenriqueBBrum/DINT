@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-output_folder=~/Documents/Masters/past_results/latest/results_0.25_1
+output_folder=~/Documents/Masters/past_results/latest/results_2_5
 scripts_input_dir=~/Documents/Masters/testing/results
 
 

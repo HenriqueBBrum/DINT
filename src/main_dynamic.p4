@@ -8,16 +8,19 @@
 
 /***************************************************************/
 
-const bit<48> tel_insertion_min_window = 250000;
-const bit<48> obs_window = 250000; // 1 Seg = 1000000 microseg
+const bit<48> tel_insertion_min_window = 2000000;
+const bit<48> obs_window = 2000000; // 1 Seg = 1000000 microseg
 const bit<48> max_t = 10000000;
+
+
+
 
 const bit<48> alfa = 3;
 const bit<8> beta = 1; //divisor por shift logo é o mesmo que 2
 
 /***************************************************************/
 
-const bit<64> div = 0x1999999A; /// used to divide a number by 10
+const bit<64> div = 0x1999999A; /// Used to divide a number by 10
 const bit<64> div_100 = 0x28F5C29;
 
 const bit<32> mean_n = 8;
@@ -29,36 +32,19 @@ const bit<32> base_delta = 300;
 *********************** R E G I S T E R S  *******************************
 *************************************************************************/
 
-register<bit<32>>(MAX_PORTS) pres_byte_cnt_reg;
+register<bit<32>>(MAX_PORTS) pres_byte_cnt_reg; // Used to check if there was a big enough variation (changes every obs_window)
+register<bit<32>>(MAX_PORTS) telemetry_byte_cnt_reg; // Used to save byte count information to telemetry header (changes every tel_insertion_min_window)
 register<bit<32>>(MAX_PORTS) past_byte_cnt_reg;
 register<bit<32>>(MAX_PORTS) packets_cnt_reg;
 
 register<time_t>(MAX_PORTS) previous_insertion_reg;
-
-register<bit<32>>(MAX_PORTS) telemetry_byte_cnt_reg;
-
 register<time_t>(MAX_PORTS) obs_last_seen_reg;
-
 register<time_t>(MAX_PORTS) tel_insertion_window_reg;
 
 register<bit<32>>(MAX_PORTS) delta_reg;
 register<bit<32>>(MAX_PORTS) n_last_values_reg;
 register<bit<32>>(MAX_PORTS) count_reg;
 
-// register<bit<1>>(MAX_PORTS) delay;
-
-//  if(delta_bytes > (int<32>)delta || delta_bytes < -1*((int<32>)delta)){
-//             tel_insertion_window = tel_insertion_min_window; // Decreases time if bytes difference was bigger than expected
-//             delay.write(meta.port_id, 1);
-// }else{
-//     bit<1> d;
-//     delay.read(d, meta.port_id);
-//     if(d == 1){
-//         delay.write(meta.port_id, 0);
-//     }else{
-//         tel_insertion_window = min(max_t, (tel_insertion_window*alfa)); // Increases time if bytes difference was smaller than expected
-//     }
-// }
 
 
 time_t max(in time_t v1,in time_t v2){
@@ -199,7 +185,9 @@ control MyIngress(inout headers hdr,
                 meta.port_id = 0; //(bit<32>)standard_metadata.egress_spec;
 
                 if(meta.port_id < (bit<32>)MAX_PORTS){
-                    bit<32> amt_packets;bit<32> tel_amt_bytes;bit<32> total_amt_bytes;
+                    bit<32> amt_packets;
+                    bit<32> tel_amt_bytes;
+                    bit<32> total_amt_bytes;
 
                     packets_cnt_reg.read(amt_packets, meta.port_id);
                     amt_packets = amt_packets+1;
@@ -261,14 +249,13 @@ void insert_telemetry(inout headers hdr, inout metadata meta,in bit<32> tel_amt_
         if(!hdr.telemetry.isValid()){
             hdr.telemetry.setValid();
             hdr.telemetry.hop_cnt = 0;
+            hdr.ethernet.ether_type = TYPE_TELEMETRY;
+            hdr.telemetry.next_header_type = TYPE_IPV4;
+            hdr.telemetry.telemetry_data_sz = TEL_DATA_SZ;
         }
 
         if(hdr.telemetry.hop_cnt < MAX_HOPS){
             hdr.telemetry.hop_cnt = hdr.telemetry.hop_cnt + 1;
-            hdr.ethernet.ether_type = TYPE_TELEMETRY;
-
-            hdr.telemetry.next_header_type = TYPE_IPV4;
-            hdr.telemetry.telemetry_data_sz = TEL_DATA_SZ;
 
             hdr.tel_data.push_front(1);
             hdr.tel_data[0].setValid();

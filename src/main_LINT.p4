@@ -7,22 +7,78 @@
 #include "include/checksum.p4"
 
 
+
+
+
+const bit<8> alfa = 1; // Equals to 2^-1
+const bit<8> delta = 1; // Equals to 2^-1
+
+const bit<48> tel_insertion_window = 1000000; // 1 Seg = 1000000 microseg
+
+
+
+
+
 /*************************************************************************
 *********************** R E G I S T E R S  ***********************************
 *************************************************************************/
 
 
-register<bit<32>>(MAX_PORTS) pres_byte_cnt_reg;
-register<bit<32>>(MAX_PORTS) past_byte_cnt_reg;
+register<bit<32>>(MAX_PORTS) pres_byte_cnt_reg; // Check if it neede to report
+register<bit<32>>(MAX_PORTS) telemetry_byte_cnt_reg; // Used to save byte count information to telemetry header (changes every tel_insertion_min_window) 
 register<bit<32>>(MAX_PORTS) packets_cnt_reg;
 
 register<time_t>(MAX_PORTS) previous_insertion_reg;
+
+
+register<bit<32>>(MAX_PORTS) past_device_obs_reg;
+register<bit<32>>(MAX_PORTS) past_reported_obs_reg;
+
 
 
 
 /*************************************************************************
 **************  I N G R E S S   P R O C E S S I N G   *******************
 *************************************************************************/
+
+
+
+bit<1> report_metrics(inout metadata meta, in bit<32> pres_amt_bytes){
+
+    bit<1> report = 0;
+
+    int<32> current_obs = (int<32>)pres_amt_bytes;
+
+    bit<32> past_device_obs;
+    bit<32> past_reported_obs;
+
+
+    past_device_obs_reg.read(past_device_obs, meta.port_id);
+    past_reported_obs_reg.read(past_reported_obs, meta.port_id);
+
+    int<32> latest_device_obs = (current_obs - ((int<32>)past_device_obs))>>alfa; 
+    latest_device_obs = latest_device_obs + (int<32>)past_device_obs;
+    if(past_device_obs == 0){
+        latest_device_obs = current_obs;
+    }
+
+    int<32> deviation  = latest_device_obs - (int<32>)past_reported_obs;
+    if(deviation > latest_device_obs>>delta || deviation < -1*(latest_device_obs>>delta)){
+        report = 1;
+
+        int<32> latest_reported_obs = (current_obs - (int<32>)past_reported_obs)>>alfa;
+        latest_reported_obs = latest_reported_obs + (int<32>)past_reported_obs;
+        if(past_reported_obs == 0){
+            latest_reported_obs = current_obs;
+        }
+        past_reported_obs_reg.write(meta.port_id, (bit<32>)latest_reported_obs);
+    }
+
+    past_device_obs_reg.write(meta.port_id, (bit<32>)latest_device_obs);
+
+    return report;
+}
+
 
 
 control MyIngress(inout headers hdr,
@@ -76,7 +132,9 @@ control MyIngress(inout headers hdr,
                 meta.port_id = 0;//(bit<32>)standard_metadata.egress_spec;
 
                 if(meta.port_id < (bit<32>)MAX_PORTS){
-                    bit<32> amt_packets;bit<32> amt_bytes;
+                    bit<32> amt_packets;
+                    bit<32> amt_bytes;
+                    bit<32> tel_amt_bytes;
 
                     packets_cnt_reg.read(amt_packets, meta.port_id);
                     amt_packets = amt_packets+1;
@@ -85,6 +143,10 @@ control MyIngress(inout headers hdr,
                     pres_byte_cnt_reg.read(amt_bytes, meta.port_id);
                     amt_bytes = amt_bytes+standard_metadata.packet_length;
                     pres_byte_cnt_reg.write(meta.port_id,  amt_bytes);
+
+                    telemetry_byte_cnt_reg.read(tel_amt_bytes, meta.port_id);   // Used for telemetry purpose
+                    tel_amt_bytes = tel_amt_bytes+standard_metadata.packet_length;
+                    telemetry_byte_cnt_reg.write(meta.port_id,  tel_amt_bytes);
 
                     time_t now = standard_metadata.ingress_global_timestamp;
 
@@ -97,17 +159,32 @@ control MyIngress(inout headers hdr,
                     }
 
 
-
                     if(!hdr.telemetry.isValid()){
-                        // real_previous_insertion = 
-                        meta.last_time = previous_insertion;
-                        meta.curr_time = now;
-
-                        previous_insertion_reg.write(meta.port_id, now);
-
-
-                        clone_I2E.apply();
+                        hdr.telemetry.setValid();
+                        hdr.telemetry.hop_cnt = 0;
+                        hdr.ethernet.ether_type = TYPE_TELEMETRY;
+                        hdr.telemetry.next_header_type = TYPE_IPV4;
+                        hdr.telemetry.telemetry_data_sz = TEL_DATA_SZ;
                     }
+
+
+                    if(now - previous_insertion >= tel_insertion_window){
+                        bit<1> report = report_metrics(meta, amt_bytes);
+
+                        if(report == 1){
+                            meta.insert_tel = 1;
+
+                            meta.last_time = previous_insertion;
+                            meta.curr_time = now;
+                            previous_insertion_reg.write(meta.port_id, now);
+                        }
+
+                        pres_byte_cnt_reg.write(meta.port_id, 0);
+                    }
+
+                    
+                    clone_I2E.apply();
+
                 }
             }
         }
@@ -118,14 +195,9 @@ control MyIngress(inout headers hdr,
 ****************  E G R E S S   P R O C E S S I N G   *******************
 *************************************************************************/
 
-void insert_telemetry(inout headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata, in bit<32> pres_amt_bytes){
-       
-        if(hdr.telemetry.isValid() && hdr.telemetry.hop_cnt < MAX_HOPS){
+void insert_telemetry(inout headers hdr, inout metadata meta, in bit<32> tel_amt_bytes){
+        if(hdr.telemetry.hop_cnt < MAX_HOPS){
             hdr.telemetry.hop_cnt = hdr.telemetry.hop_cnt + 1;
-            hdr.ethernet.ether_type = TYPE_TELEMETRY;
-
-            hdr.telemetry.next_header_type = TYPE_IPV4;
-            hdr.telemetry.telemetry_data_sz = TEL_DATA_SZ;
 
             hdr.tel_data.push_front(1);
             hdr.tel_data[0].setValid();
@@ -137,17 +209,16 @@ void insert_telemetry(inout headers hdr, inout metadata meta, inout standard_met
 
             hdr.tel_data[0].sw_id = meta.sw_id;
             hdr.tel_data[0].port_id = meta.port_id;
-
             if(hdr.telemetry.hop_cnt>1)
-                hdr.tel_data[0].amt_bytes = pres_amt_bytes - (bit<32>)(hdr.telemetry.hop_cnt-1)*(TEL_DATA_SZ) - TEL_H_SZ;
+                hdr.tel_data[0].amt_bytes = tel_amt_bytes - (bit<32>)(hdr.telemetry.hop_cnt-1)*(TEL_DATA_SZ) - TEL_H_SZ;
             else
-                hdr.tel_data[0].amt_bytes = pres_amt_bytes;
+                hdr.tel_data[0].amt_bytes = tel_amt_bytes;
 
             hdr.tel_data[0].last_time = meta.last_time;
-            hdr.tel_data[0].curr_time = meta.curr_time;
+            hdr.tel_data[0].curr_time = meta.curr_time; // (bit<64>)(now - previous_insertion);
 
-            pres_byte_cnt_reg.write(meta.port_id, 0);
-            past_byte_cnt_reg.write(meta.port_id, 0);
+
+            telemetry_byte_cnt_reg.write(meta.port_id, 0);
         }
 }
 
@@ -199,16 +270,19 @@ control MyEgress(inout headers hdr,
 
         apply{
             if(hdr.ipv4.isValid() && hdr.udp.isValid()){
+
+                
                 sw_id.apply();
 
-                bit<32> amt_bytes;
-                pres_byte_cnt_reg.read(amt_bytes, meta.port_id);
+                bit<32> tel_bytes;
+                telemetry_byte_cnt_reg.read(tel_bytes, meta.port_id);
 
                 if(standard_metadata.instance_type == PKT_INSTANCE_TYPE_INGRESS_CLONE){
                     clone_lpm.apply();
 
                      /** Collects metadata */
-                    insert_telemetry(hdr, meta, standard_metadata, amt_bytes);
+                    if(meta.insert_tel == 1)
+                        insert_telemetry(hdr, meta, tel_bytes);
 
                     bit<32> truncate_sz = L2_HEADERS_SZ+(bit<32>)hdr.telemetry.hop_cnt*TEL_DATA_SZ;
 
@@ -218,9 +292,9 @@ control MyEgress(inout headers hdr,
                 }else if(standard_metadata.instance_type == PKT_INSTANCE_TYPE_NORMAL){
                     // If switch is a transit switch and has telemetry, add tel_data
                     // If its a sink switch, remove telemetry headers
-                    if(meta.cloned == 0)
-                        insert_telemetry(hdr, meta, standard_metadata, amt_bytes);
-                    else{
+                    if(meta.cloned == 0 && meta.insert_tel == 1)
+                        insert_telemetry(hdr, meta, tel_bytes);
+                    else if(meta.cloned == 1){
                         hdr.telemetry.setInvalid();
                         hdr.tel_data.pop_front(MAX_HOPS);
                         hdr.ethernet.ether_type = TYPE_IPV4;
