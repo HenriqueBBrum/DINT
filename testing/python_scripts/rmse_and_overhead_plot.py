@@ -5,14 +5,13 @@ import argparse
 import numpy as np
 from collections import OrderedDict
 import glob
-from ast import literal_eval
 
 
 metric_unit = {'b': 1, 'k':1000, 'm':1000000, 'g':1000000000}
+hatch = {'static': '\\', 'sINT': '\\', 'dynamic': '\\'}
 
 
-
-
+# Arguments that need to be informed for this program
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', '--file_folder', type=str, help="Folder with input files", required=True)
@@ -23,26 +22,13 @@ def parse_args():
     return vars(parser.parse_args())
 
 
-
-
+# Add a label on top of each bar plot
 def add_value_labels(ax, decimal_format=2, spacing=8, y_spacing=0, color='black'):
-    # For each bar: Place a label
     for rect in ax.patches:
         # Get X and Y placement of label from rect.
         y_value = rect.get_height()
         x_value = rect.get_x() + rect.get_width() / 2
-
-        # Number of points between bar and label. Change to your liking.
-        space = spacing
-        # Vertical alignment for positive values
-        va = 'bottom'
-
-        # If value of bar is negative: Place label below bar
-        if y_value < 0:
-            # Invert space to place label below
-            space *= -1
-            # Vertically align label at top
-            va = 'top'
+     
         # Use Y value as label and format number with one decimal place
         str_ = "{:."+decimal_format+"f}"
         label = str_.format(y_value)
@@ -51,12 +37,12 @@ def add_value_labels(ax, decimal_format=2, spacing=8, y_spacing=0, color='black'
         ax.annotate(
             label,                      # Use `label` as label
             (x_value, y_value),         # Place label at end of the bar
-            xytext=(y_spacing, space),          # Vertically shift label by `space`
+            xytext=(y_spacing, spacing),          # Vertically shift label by `spacing`
             textcoords="offset points", # Interpret `xytext` as offset in points
             ha='center',                # Horizontally center label
-            va=va,
-            color=color)                      # Vertically align label differently for
-                                        # positive and negative values.
+            va='bottom',                      # Vertically align label for positive values ('bottom' for positive, 'top' for negatives).
+            color=color,
+            fontsize=9)               
 
 # pos = postion in data to be used, mult is the scale factor
 def crete_bar_graph_rects(data, pos, mult):
@@ -80,7 +66,7 @@ def crete_bar_graph_rects(data, pos, mult):
 
     return labels, rects, sw_type_count
 
-
+# Plots a bar graph provied the destination file, tile, ylabel legend, the bars to be drwan, 
 def plot_bar_graph(filepath, title, ylabel, labels, rects, sw_type_count, label_decimal_house):
     fig, ax = plt.subplots()
     labels = list(dict.fromkeys(labels))
@@ -97,7 +83,7 @@ def plot_bar_graph(filepath, title, ylabel, labels, rects, sw_type_count, label_
         ct = ct +1
 
         x = sw_type_count_x_map[k]
-        r = ax.bar(x+width*ct, v[0], width, yerr=v[1], label=k.capitalize(), hatch='\\', align='edge', capsize=3, 
+        r = ax.bar(x+width*ct, v[0], width, yerr=v[1], label=k.capitalize(), hatch=hatch[k], align='edge', capsize=3, 
             error_kw={'elinewidth':1, 'alpha':0.65})
 
    
@@ -113,10 +99,7 @@ def plot_bar_graph(filepath, title, ylabel, labels, rects, sw_type_count, label_
         if(local_max > max_): max_ = local_max
     
     ax.set_ylim([0, max_+0.5*max_])
-    start, end = ax.get_ylim()
-    #ax.yaxis.set_ticks(np.arange(start, end, y_tick_step))
 
-    print(x, list(dict.fromkeys(labels)))
     ax.set_xticks(np.arange(0.5, len(labels), 1), list(dict.fromkeys(labels)))
     ax.set_xlabel('Telemetry push time (s)')
 
@@ -128,7 +111,7 @@ def plot_bar_graph(filepath, title, ylabel, labels, rects, sw_type_count, label_
 
     
 
-# Review error with unit change. Problem is probably an excess of ticks or labels
+# Plot all bar graphs (RMSE, telemetr overhead and jitter)
 def plot_graphs(output_folder, traffic_type, sw_id, total_time, data, unit):
     if len(data) <= 0:
         return
@@ -161,7 +144,6 @@ def plot_graphs(output_folder, traffic_type, sw_id, total_time, data, unit):
 
 def main():
     args = parse_args()
-
     rmse_and_byte_cnt_files = glob.glob(args['file_folder']+"*.csv")
 
     for f in rmse_and_byte_cnt_files:
@@ -178,10 +160,7 @@ def main():
                 f_key = row['sw_id']+"_"+row['experiment_time']
                 s_key = row['sw_type']+"_"+row['min_telemetry_push_time']
 
-
-                jitter = eval(row['jitter'])
-
-
+                jitter = eval(row['jitter']) # Jitter is saved as a string representing a dict. Convert to an actual dict
                 min_times[row['min_telemetry_push_time']] = 1
 
                 if (f_key+s_key) in my_dict:
@@ -199,7 +178,6 @@ def main():
                     my_dict[(f_key+s_key)] = updated_value
                     graph_dict[f_key][s_key] = updated_value
                 else:
-                    print(jitter['h1'], jitter['h3'], jitter['h4'])
                     value = (1, [float(row['rmse'])], [float(row['telemetry_byte_count'])], [float(jitter['h1'])], [float(jitter['h3'])], [float(jitter['h4'])],
                         float(row['experiment_time']))
                     
