@@ -8,7 +8,7 @@ import glob
 
 
 metric_unit = {'b': 1, 'k':1000, 'm':1000000, 'g':1000000000}
-hatch = {'static': '\\', 'sINT': '\\', 'dynamic': '\\'}
+order = ['Static', 'sINT', 'LINT', 'DINT']
 
 
 # Arguments that need to be informed for this program
@@ -25,6 +25,7 @@ def parse_args():
 # Add a label on top of each bar plot
 def add_value_labels(ax, decimal_format=2, spacing=8, y_spacing=0, color='black'):
     for rect in ax.patches:
+        #print(rect)
         # Get X and Y placement of label from rect.
         y_value = rect.get_height()
         x_value = rect.get_x() + rect.get_width() / 2
@@ -32,7 +33,6 @@ def add_value_labels(ax, decimal_format=2, spacing=8, y_spacing=0, color='black'
         # Use Y value as label and format number with one decimal place
         str_ = "{:."+decimal_format+"f}"
         label = str_.format(y_value)
-
         # Create annotation
         ax.annotate(
             label,                      # Use `label` as label
@@ -41,8 +41,8 @@ def add_value_labels(ax, decimal_format=2, spacing=8, y_spacing=0, color='black'
             textcoords="offset points", # Interpret `xytext` as offset in points
             ha='center',                # Horizontally center label
             va='bottom',                      # Vertically align label for positive values ('bottom' for positive, 'top' for negatives).
-            color=color,
-            fontsize=9)               
+            color=rect.get_facecolor(),
+            fontsize=8.5)               
 
 # pos = postion in data to be used, mult is the scale factor
 def crete_bar_graph_rects(data, pos, mult):
@@ -83,11 +83,10 @@ def plot_bar_graph(filepath, title, ylabel, labels, rects, sw_type_count, label_
         ct = ct +1
 
         x = sw_type_count_x_map[k]
-        r = ax.bar(x+width*ct, v[0], width, yerr=v[1], label=k.capitalize(), hatch=hatch[k], align='edge', capsize=3, 
+        r = ax.bar(x+width*ct, v[0], width, yerr=v[1], label=k.capitalize(), hatch='\\', align='center', capsize=3, 
             error_kw={'elinewidth':1, 'alpha':0.65})
 
    
-
     add_value_labels(ax, label_decimal_house, y_spacing=-2)
     ax.set_title(title)
     ax.set_ylabel(ylabel)
@@ -104,7 +103,8 @@ def plot_bar_graph(filepath, title, ylabel, labels, rects, sw_type_count, label_
     ax.set_xlabel('Telemetry push time (s)')
 
     h1, l1 = ax.get_legend_handles_labels()
-    ax.legend(h1, l1, loc='upper right')
+    print(l1, order)
+    ax.legend(h1, order, loc='upper right')
 
     fig.tight_layout()  # otherwise the right y-label is slightly clipped
     fig.savefig(filepath)
@@ -116,25 +116,25 @@ def plot_graphs(output_folder, traffic_type, sw_id, total_time, data, unit):
     if len(data) <= 0:
         return
 
-    rmse_exp_title = 'Measurement Error - '+'SW'+sw_id+' | '+total_time+'s'
+    rmse_exp_title = 'Measurement Error - '+'(SW'+sw_id+', '+total_time+'s)'
     rmse_exp_fp = output_folder+traffic_type+'_RMSE_E_'+sw_id+'_'+total_time.split('.')[0]+'s.png'
     plot_bar_graph(rmse_exp_fp, rmse_exp_title, 'NRMSE (%)', *crete_bar_graph_rects(data, 1, 100), "1")
 
 
-    byte_cnt_title = 'Telemetry Overhead - '+'SW'+sw_id+' | '+total_time+'s'
+    byte_cnt_title = 'Telemetry Overhead - '+'(SW'+sw_id+', '+total_time+'s)'
     byte_cnt_fp = output_folder+traffic_type+'_Tel_Overhead_'+sw_id+'_'+total_time.split('.')[0]+'s.png'
     plot_bar_graph(byte_cnt_fp, byte_cnt_title, 'Bytes ('+unit.upper()+')', *crete_bar_graph_rects(data, 2, metric_unit[unit]), "0")
 
 
-    h1_title = 'H1 Jitter - '+'SW'+sw_id+' | '+total_time+'s'
+    h1_title = 'H1 Jitter - '+'(SW'+sw_id+', '+total_time+'s)'
     h1_fp = output_folder+traffic_type+'_H1_Jitter_'+sw_id+'_'+total_time.split('.')[0]+'s.png'
     plot_bar_graph(h1_fp, h1_title, 'Milliseconds', *crete_bar_graph_rects(data, 3, 1), "2")
 
-    h3_title = 'H3 Jitter - '+'SW'+sw_id+' | '+total_time+'s'
+    h3_title = 'H3 Jitter - '+'(SW'+sw_id+', '+total_time+'s)'
     h3_fp = output_folder+traffic_type+'_H3_Jitter_'+sw_id+'_'+total_time.split('.')[0]+'s.png'
     plot_bar_graph(h3_fp, h3_title, 'Milliseconds', *crete_bar_graph_rects(data, 4, 1), "2")
 
-    h4_title = 'H4 Jitter - '+'SW'+sw_id+' | '+total_time+'s'
+    h4_title = 'H4 Jitter - '+'(SW'+sw_id+', '+total_time+'s)'
     h4_fp = output_folder+traffic_type+'_H4_Jitter_'+sw_id+'_'+total_time.split('.')[0]+'s.png'
     plot_bar_graph(h4_fp, h4_title, 'Milliseconds', *crete_bar_graph_rects(data, 5, 1), "2")
 
@@ -187,7 +187,6 @@ def main():
                         graph_dict[f_key][s_key] = value
                     else:
                         graph_dict[f_key][s_key] = value
-
 
 
         final_dict = OrderedDict()

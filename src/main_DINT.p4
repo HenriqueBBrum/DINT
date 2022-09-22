@@ -12,11 +12,8 @@ const bit<48> tel_insertion_min_window = 2000000;
 const bit<48> obs_window = 2000000; // 1 Seg = 1000000 microseg
 const bit<48> max_t = 10000000;
 
-
-
-
-const bit<48> alfa = 3;
-const bit<8> beta = 1; //divisor por shift logo é o mesmo que 2
+const bit<48> alfa = 5;
+const bit<8> beta = 2; //divisor por shift logo é o mesmo que 2
 
 /***************************************************************/
 

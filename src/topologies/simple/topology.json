@@ -9,11 +9,11 @@
     },
     "switches": {
         "s1": {
-          "cli_input": "simple_topology/s1-commands.txt",
-          "runtime_json" : "simple_topology/s1-runtime.json"
+          "cli_input": "simple/s1-commands.txt",
+          "runtime_json" : "simple/s1-runtime.json"
         },
         "s2": {
-            "runtime_json" : "simple_topology/s2-runtime.json"
+            "runtime_json" : "simple/s2-runtime.json"
           }
     },
     "links": [

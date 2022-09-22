@@ -86,7 +86,8 @@ def read_telemetry_file(telemetry_file, switch_id, unit, experiment_duration):
             cols = line.split(",")
             if hop_cnt == 0:
                 hop_cnt = int(cols[1],10) 
-                telemetry_byte_count=telemetry_byte_count+(telelemetry_header_sz+telemetry_data_sz*hop_cnt)
+                if(hop_cnt > 0):    
+                    telemetry_byte_count=telemetry_byte_count+(telelemetry_header_sz+telemetry_data_sz*hop_cnt)
             else:
                 if(cols[0]==switch_id):
                     time_window_s = (int(cols[-1],10)-int(cols[-2],10))/(microseg)
@@ -174,6 +175,7 @@ def find_jitter(args, sw_type):
         sub_dest_traffic = dest_traffic[dest_traffic['ip.src'] == ip_src]
 
         if(len(sub_dest_traffic['frame.time_epoch'].to_numpy()) != len(src_traffic['frame.time_epoch'].to_numpy())):
+            print(len(sub_dest_traffic['frame.time_epoch'].to_numpy()), len(src_traffic['frame.time_epoch'].to_numpy()))
             continue
 
         time_delay = np.subtract(sub_dest_traffic['frame.time_epoch'].to_numpy(), src_traffic['frame.time_epoch'].to_numpy())
@@ -244,7 +246,7 @@ def main():
         plot_line_graph(args, sw_type, real_x, real_y, tel_y)
 
        
-        print(sw_type, len(real_y), args['min_telemetry_push_time'], len(tel_y), total_traffic*8)
+        print(sw_type, args['min_telemetry_push_time'], total_traffic)
 
         rmse = sqrt(np.square(np.subtract(real_y, tel_y)).mean())
         rmse = rmse/(max(real_y) - min(real_y))

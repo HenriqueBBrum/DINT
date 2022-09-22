@@ -18,20 +18,20 @@
     },
     "switches": {
         "s1": {
-            "cli_input": "topologies/mesh_topology/mirror-cmds.txt",
-            "runtime_json" : "topologies/mesh_topology/s1-runtime.json"
+            "cli_input": "topologies/mesh/mirror-cmds.txt",
+            "runtime_json" : "topologies/mesh/s1-runtime.json"
         },
         "s2": {
-            "cli_input": "topologies/mesh_topology/mirror-cmds.txt",
-            "runtime_json" : "topologies/mesh_topology/s2-runtime.json"
+            "cli_input": "topologies/mesh/mirror-cmds.txt",
+            "runtime_json" : "topologies/mesh/s2-runtime.json"
         },
         "s3": {
-            "cli_input": "topologies/mesh_topology/mirror-cmds.txt",
-            "runtime_json" : "topologies/mesh_topology/s3-runtime.json"
+            "cli_input": "topologies/mesh/mirror-cmds.txt",
+            "runtime_json" : "topologies/mesh/s3-runtime.json"
         },
         "s4": {
-            "cli_input": "topologies/mesh_topology/mirror-cmds.txt",
-            "runtime_json" : "topologies/mesh_topology/s4-runtime.json"
+            "cli_input": "topologies/mesh/mirror-cmds.txt",
+            "runtime_json" : "topologies/mesh/s4-runtime.json"
         }
 
     },
