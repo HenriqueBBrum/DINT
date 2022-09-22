@@ -11,13 +11,13 @@
                           "arp -i eth0 -s 10.0.3.30 08:00:00:00:03:00"]}
     },
     "switches": {
-        "s1": { "runtime_json" : "sINT_paper_topology/s1-runtime.json" },
-        "s2": { "runtime_json" : "sINT_paper_topology/s2-runtime.json" },
-        "s3": { "runtime_json" : "sINT_paper_topology/s3-runtime.json" },
+        "s1": { "runtime_json" : "sINT_paper/s1-runtime.json" },
+        "s2": { "runtime_json" : "sINT_paper/s2-runtime.json" },
+        "s3": { "runtime_json" : "sINT_paper/s3-runtime.json" },
 
         "s4": {
-          "cli_input": "sINT_paper_topology/s4-commands.txt",
-          "runtime_json" : "sINT_paper_topology/s4-runtime.json"
+          "cli_input": "sINT_paper/s4-commands.txt",
+          "runtime_json" : "sINT_paper/s4-runtime.json"
         }
     },
     "links": [

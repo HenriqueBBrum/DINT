@@ -24,9 +24,6 @@ min_frequency = 0.01
 type = 'link'
 
 
-log_file = open('log.txt', "a")
-
-
 
 def signifcant_change(tel_data, link_threshold):
     if(len(tel_data)!=len(previous_tel_data)):
@@ -39,7 +36,6 @@ def signifcant_change(tel_data, link_threshold):
         elif(type == 'link'):
             curr_utilization = microseg*tel_data[i].amt_bytes/(tel_data[i].curr_time - tel_data[i].last_time)
             prev_utilization = microseg*previous_tel_data[i].amt_bytes/(previous_tel_data[i].curr_time - previous_tel_data[i].last_time)
-            log_file.write(str(fabs(curr_utilization - prev_utilization))+"\n")
             if (fabs(curr_utilization - prev_utilization) > link_threshold):
                 return True
 
@@ -71,7 +67,6 @@ def insertion_ratio_algorithm(flow_id, tel_data, frequency_file, link_threshold)
         return
 
     previous_tel_data = tel_data
-    log_file.write("New frequency: "+str(rf)+"\n")
 
     if(flow_id in frequency_dict):
         old_rf = frequency_dict[flow_id]
@@ -113,20 +108,14 @@ def main(args):
     iface = 'eth0'
     tel_file = open(args['tel_output_file'], "w")
 
-    log_file.flush()
-    try:
-        log_file.write("Started receiving pkts, output file is:"+ args['tel_output_file']+"\n")
-    except Exception as e:
-        log_file.write(f"Error start Receive: {e}\n")
-
+   
     try:
         sniff(iface = iface,
               prn = lambda x: handle_pkt(x, args['frequency_file'], tel_file, args['link_threshold']), timeout = args['timeout'])
     except Exception as e:
-        log_file.write(f"Error in sniff sINT: {e}\n")
+        print(f"Error in sniff: {e}\n")
 
-    log_file.write("Exiting")
-    log_file.close()
+  
     
     tel_file.close()
 

@@ -67,23 +67,13 @@ def main(args):
     time.sleep(args['wait_time'])
 
 
-    log_file = open('log.txt', "a")
-    log_file.flush()
-    try:
-        log_file.write("Started sending pkts sINT"+ str(args['wait_time']))
-    except Exception as e:
-        log_file.write(f"Error send: {e}\n")
-
-
+    
     start = time.time()
     while time.time() - start < args['timeout']:
         try:
             frequency_dict = check_for_file_change(args['frequency_file'], last_modified, frequency_dict)
             if(flow_id in frequency_dict):
-                try:
-                    count = send_telemtry_or_normal_pkt(s, count, frequency_dict.get(flow_id), telemetry_pkt, normal_pkt)
-                except Exception as e:
-                    log_file.write(f"Error send: {e}\n")
+                count = send_telemtry_or_normal_pkt(s, count, frequency_dict.get(flow_id), telemetry_pkt, normal_pkt)   
             else:
                 s.send(telemetry_pkt)
 

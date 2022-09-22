@@ -13,7 +13,7 @@
 const bit<8> alfa = 1; // Equals to 2^-1
 const bit<8> delta = 1; // Equals to 2^-1
 
-const bit<48> tel_insertion_window = 1000000; // 1 Seg = 1000000 microseg
+const bit<48> observation_window = 2000000; // 1 Seg = 1000000 microseg
 
 
 
@@ -168,7 +168,7 @@ control MyIngress(inout headers hdr,
                     }
 
 
-                    if(now - previous_insertion >= tel_insertion_window){
+                    if(now - previous_insertion >= observation_window){
                         bit<1> report = report_metrics(meta, amt_bytes);
 
                         if(report == 1){

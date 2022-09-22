@@ -1,7 +1,7 @@
 {
    "target": "bmv2",
-   "p4info": "build/main_sINT.p4.p4info.txt",
-   "bmv2_json": "build/main_sINT.json",
+   "p4info": "build/main_LINT.p4.p4info.txt",
+   "bmv2_json": "build/main_LINT.json",
    "table_entries": [
       {
          "table": "MyIngress.ipv4_lpm",
@@ -20,7 +20,7 @@
          "action_name": "MyIngress.ipv4_forward",
          "action_params": {
             "dst_addr": "08:00:00:00:01:11",
-            "port": 2
+            "port": 1
          }
       },
       {
@@ -34,7 +34,7 @@
          "action_name": "MyIngress.ipv4_forward",
          "action_params": {
             "dst_addr": "08:00:00:00:02:22",
-            "port": 1
+            "port": 2
          }
       },
       {
@@ -69,7 +69,7 @@
          "table": "MyIngress.clone_I2E",
          "match": {
             "hdr.ipv4.dst_addr": [
-               "10.0.2.2",
+               "10.0.1.1",
                32
             ]
          },
@@ -81,14 +81,14 @@
          "default_action": true,
          "action_name": "MyEgress.set_sw_id",
          "action_params": {
-            "sw_id": 2
+            "sw_id": 1
          }
       },
       {
          "table": "MyEgress.clone_lpm",
          "match": {
             "hdr.ipv4.dst_addr": [
-               "10.0.2.2",
+               "10.0.1.1",
                32
             ]
          },
