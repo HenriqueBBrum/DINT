@@ -1,5 +1,5 @@
 BMV2_SWITCH_EXE = simple_switch_grpc
-TOPO = topologies/mesh_topology/topology.json
+TOPO = topologies/mesh/topology.json
 
 CONFIGURE_SCRIPT = python_scripts/configuration/configure_json.py
 DEFAULT_P4_SRC = main_static.p4
