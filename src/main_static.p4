@@ -6,7 +6,7 @@
 #include "include/parsers.p4"
 #include "include/checksum.p4"
 
-const bit<48> tel_insertion_window = 250000; // 1 Seg = 1000000 microseg
+const bit<48> tel_insertion_window = 2000000; // 1 Seg = 1000000 microseg
 
 
 /*************************************************************************
@@ -15,7 +15,6 @@ const bit<48> tel_insertion_window = 250000; // 1 Seg = 1000000 microseg
 
 
 register<bit<32>>(MAX_PORTS) pres_byte_cnt_reg;
-register<bit<32>>(MAX_PORTS) past_byte_cnt_reg;
 register<bit<32>>(MAX_PORTS) packets_cnt_reg;
 
 register<time_t>(MAX_PORTS) previous_insertion_reg;
@@ -79,7 +78,8 @@ control MyIngress(inout headers hdr,
 
 
                 if(meta.port_id < (bit<32>)MAX_PORTS){
-                    bit<32> amt_packets;bit<32> amt_bytes;
+                    bit<32> amt_packets;
+                    bit<32> amt_bytes;
 
                     packets_cnt_reg.read(amt_packets, meta.port_id);
                     amt_packets = amt_packets+1;
@@ -124,14 +124,14 @@ void insert_telemetry(inout headers hdr, inout metadata meta, in bit<32> pres_am
         if(!hdr.telemetry.isValid()){
             hdr.telemetry.setValid();
             hdr.telemetry.hop_cnt = 0;
+            hdr.ethernet.ether_type = TYPE_TELEMETRY;
+            hdr.telemetry.next_header_type = TYPE_IPV4;
+            hdr.telemetry.telemetry_data_sz = TEL_DATA_SZ;
         }
 
         if(hdr.telemetry.hop_cnt < MAX_HOPS){
             hdr.telemetry.hop_cnt = hdr.telemetry.hop_cnt + 1;
-            hdr.ethernet.ether_type = TYPE_TELEMETRY;
-
-            hdr.telemetry.next_header_type = TYPE_IPV4;
-            hdr.telemetry.telemetry_data_sz = TEL_DATA_SZ;
+            
 
             hdr.tel_data.push_front(1);
             hdr.tel_data[0].setValid();
@@ -153,7 +153,6 @@ void insert_telemetry(inout headers hdr, inout metadata meta, in bit<32> pres_am
 
 
             pres_byte_cnt_reg.write(meta.port_id, 0);
-            past_byte_cnt_reg.write(meta.port_id, 0);
         }
 }
 

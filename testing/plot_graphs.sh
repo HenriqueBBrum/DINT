@@ -1,22 +1,5 @@
-#!/bin/bash
-
 test_files_folder=~/Documents/Masters/testing/test_config_files
 scripts_input_dir=~/Documents/Masters/testing/results
-
-cd ../src 
-
-make clean
-make P4_SRC=main_static.p4 TEST_JSON=$test_files_folder/static_tcpreplay.json
-
-make clean
-make P4_SRC=main_dynamic.p4 TEST_JSON=$test_files_folder/dynamic_tcpreplay.json
-
-make clean
-make P4_SRC=main_sINT.p4 TEST_JSON=$test_files_folder/sINT_tcpreplay.json
-
-
-# make clean
-# make P4_SRC=main_LINT.p4 TEST_JSON=$test_files_folder/LINT.json
 
 cd ../testing/python_scripts
 

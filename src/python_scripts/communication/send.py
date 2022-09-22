@@ -21,7 +21,7 @@ def main(args):
     pkt = Ether(dst='ff:ff:ff:ff:ff:ff', src=get_if_hwaddr('eth0')) / \
                 IP(dst=args['dst_ip'])/UDP(sport=args['dport'],dport=args['dport'])/Raw(load=string_val)
    
-    s = conf.L2socket(iface='eth0')
+    s = conf.L2socket()
     time.sleep(args['wait_time'])
 
     start = time.time()
