@@ -8,14 +8,10 @@
 
 
 
-
-
 const bit<8> alfa = 1; // Equals to 2^-1
-const bit<8> delta = 1; // Equals to 2^-1
+const bit<8> delta = 6; // Equals to 2^-1
 
 const bit<48> observation_window = 2000000; // 1 Seg = 1000000 microseg
-
-
 
 
 
