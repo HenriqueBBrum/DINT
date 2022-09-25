@@ -1,7 +1,7 @@
 #!/bin/bash
 
-
-output_folder=~/Documents/Masters/past_results/full/LINT_best/results_2_4
+output_folder=$1
+jitter=$2
 scripts_input_dir=~/Documents/Masters/testing/results
 
 
@@ -22,3 +22,8 @@ sudo rm $scripts_input_dir/jitter_input/*
 
 
 cp $output_folder/graphs_input/* $scripts_input_dir/graphs_input
+
+if [ $jitter = "false" ]
+then 
+	sudo rm -r $output_folder/jitter_input
+fi

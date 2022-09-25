@@ -21,7 +21,7 @@ const bit<64> div = 0x1999999A; /// Used to divide a number by 10
 const bit<64> div_100 = 0x28F5C29;
 
 const bit<32> N = 8;
-const bit<8> div_shift = 3;
+const bit<8> div_shift = 4;
 const bit<32> base_delta = 300;
 
 
