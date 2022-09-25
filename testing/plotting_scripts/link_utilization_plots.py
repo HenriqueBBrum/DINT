@@ -34,6 +34,8 @@ def parse_args():
     parser.add_argument('-s', '--switch_id', type=str, help="Switch id to be compared")
     parser.add_argument('-t', '--traffic_shape', type=str, help = "RMSE traffic shape name", required=False, default="no_type")
     parser.add_argument('-u', '--unit', type=str, help = "Metric Unit (k, m, g)", required=False, default="k")
+    parser.add_argument('--plot_jitter', action='store_true')
+
 
 
     return vars(parser.parse_args())
@@ -80,12 +82,14 @@ def read_telemetry_file(telemetry_file, switch_id, unit, experiment_duration):
     hop_cnt = 0
     prev_time = 0
     telemetry_byte_count = 0
+    total_telemetry = 0
 
     with open(telemetry_file, 'r') as txt_file:
         for line in txt_file:
             cols = line.split(",")
             if hop_cnt == 0:
                 hop_cnt = int(cols[1],10) 
+                total_telemetry=total_telemetry+(telelemetry_header_sz+telemetry_data_sz*hop_cnt)
                 if(hop_cnt > 0):    
                     telemetry_byte_count=telemetry_byte_count+(telelemetry_header_sz+telemetry_data_sz*hop_cnt)
             else:
@@ -94,7 +98,7 @@ def read_telemetry_file(telemetry_file, switch_id, unit, experiment_duration):
                     time_window_s = 1 if time_window_s == 0 else time_window_s
 
                     if(prev_time+time_window_s) > experiment_duration:
-                        return x, y, telemetry_byte_count
+                        return x, y, total_telemetry, telemetry_byte_count
 
                     x.append(float("{:.6f}".format(prev_time+time_window_s)))
                     y.append((float(cols[1])/time_window_s)/metric_unit[unit])
@@ -104,7 +108,7 @@ def read_telemetry_file(telemetry_file, switch_id, unit, experiment_duration):
 
                 hop_cnt-=1
 
-    return x, y, telemetry_byte_count
+    return x, y, total_telemetry, telemetry_byte_count
 
 
 # Returns the telemetry reported link utilization 
@@ -194,12 +198,12 @@ def find_jitter(args, sw_type):
 
 
 # Saves to a specific file rmse(%), byte count(Bytes) and jitter(ms) information
-def save_rmse_and_telemetry_byte_count(args, sw_type, telemetry_pkts_count, rmse, telemetry_byte_count, jitter):
+def save_rmse_and_telemetry_byte_count(args, sw_type, telemetry_pkts_count, rmse, telemetry_byte_count, telemetry_percentage, jitter):
     filepath = args['rmse_output_folder']+args['traffic_shape']+".csv"
     file_exists = os.path.isfile(filepath)
 
     with open(filepath, "a") as csvfile:
-        headers = ['sw_type', 'sw_id', 'min_telemetry_push_time', 'experiment_time', 'packet_count', 'rmse', 'telemetry_byte_count', 'jitter']
+        headers = ['sw_type', 'sw_id', 'min_telemetry_push_time', 'experiment_time', 'packet_count', 'rmse', 'telemetry_byte_count', 'telemetry_percentage','jitter']
         writer = csv.DictWriter(csvfile, delimiter=',', lineterminator='\n',fieldnames=headers)
 
         if not file_exists:
@@ -207,7 +211,7 @@ def save_rmse_and_telemetry_byte_count(args, sw_type, telemetry_pkts_count, rmse
 
         writer.writerow({'sw_type': sw_type, 'sw_id':args['switch_id'], 'min_telemetry_push_time': args['min_telemetry_push_time'], 
                     'experiment_time': args['experiment_duration'], 'packet_count': telemetry_pkts_count, 
-                        'rmse': rmse, 'telemetry_byte_count': telemetry_byte_count, 'jitter': jitter})
+                        'rmse': rmse, 'telemetry_byte_count': telemetry_byte_count, 'telemetry_percentage': telemetry_percentage, 'jitter': jitter})
 
 
 
@@ -230,8 +234,9 @@ def main():
 
     for f in telemetry_files:
         sw_type = f.split("/")[-1].split(".")[0].split("_")[0]
+        print(sw_type)
 
-        telemetry_x, telemetry_y, telemetry_byte_count = read_telemetry_file(f, args['switch_id'], args['unit'], args['experiment_duration'])
+        telemetry_x, telemetry_y, total_telemetry, telemetry_byte_count = read_telemetry_file(f, args['switch_id'], args['unit'], args['experiment_duration'])
 
         real_traffic_file = glob.glob(args['input_file_folder']+sw_type+"_real*.csv")[0]
         real_x, real_y, total_traffic = real_traffic_data(real_traffic_file, args['min_telemetry_push_time'], args['unit'], args['experiment_duration'])
@@ -246,14 +251,18 @@ def main():
         plot_line_graph(args, sw_type, real_x, real_y, tel_y)
 
        
-        print(sw_type, args['min_telemetry_push_time'], total_traffic)
+        print(sw_type, args['min_telemetry_push_time'], total_telemetry, telemetry_byte_count , total_telemetry/total_traffic)
 
         rmse = sqrt(np.square(np.subtract(real_y, tel_y)).mean())
         rmse = rmse/(max(real_y) - min(real_y))
         print("rmse", rmse)
 
+        jitter = {'h1': 0, 'h3': 0, 'h4': 0}
+        if(args['plot_jitter']):
+            jitter = find_jitter(args, sw_type)
+
         
-        save_rmse_and_telemetry_byte_count(args, sw_type, len(telemetry_x), rmse, telemetry_byte_count, find_jitter(args, sw_type))
+        save_rmse_and_telemetry_byte_count(args, sw_type, len(telemetry_x), rmse, telemetry_byte_count, total_telemetry/total_traffic, jitter)
        
 
 
