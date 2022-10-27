@@ -67,7 +67,7 @@ To reproduce the results obtained in the paper [DINT: A Dynamic Algorithm for In
 2. Evaluation of the _k_ parameter
 3. Comparison between DINT alternatives
 
-You first need to move the P4 files inside their folder in *src/\*DINT\**for each of these tests. Then execute *run_testing.sh* script indicating the specific evaluation script in the *testing/scripts*. 
+You first need to move the P4 files of the desired test from their folder (in _src/\*DINT\*_) to the parent folder (_src/_). After that, you need to execute the *run_testing.sh* file informing the specific evaluation script in the *testing/scripts* argument as well as the rest of the parameters. In the article we used 0.25, 0.5 and 1 for the <min_time> arguments and used 5 for the <loops> parameter.
 
 Obs: One of our future plans is to have only one DINT\*.p4 file for the evaluation and just change the desired parameters. The current approach needs to be optimized...  
 
