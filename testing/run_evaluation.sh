@@ -9,7 +9,6 @@ evaluation_file=$1
 final_output_folder=$2
 min_time=$3
 loops=$4
-jitter=$5
 
 echo "$1"
 echo "$2"
@@ -24,8 +23,8 @@ for ((i = 1; i <= "$loops"; i++ )); do
 
 	if [ "$i" -eq "$loops" ] 
 	then
-		python3 $testing_scripts_folder/comparison_plots.py -i $scripts_input_dir/graphs_input/ -g $scripts_input_dir/graphs_output/ --jitter "$jitter"
+		python3 $testing_scripts_folder/comparison_plots.py -i $scripts_input_dir/graphs_input/ -g $scripts_input_dir/graphs_output/ 
 	fi
 
-	#sh ./scripts/copy_and_remove.sh "$folder" "$jitter"
+	sh ./scripts/copy_and_remove.sh "$folder" 
 done

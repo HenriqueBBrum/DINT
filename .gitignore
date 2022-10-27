@@ -2,6 +2,8 @@ logs
 *.log
 
 
+*DITG*
+
 assets
 
 **/pcaps
