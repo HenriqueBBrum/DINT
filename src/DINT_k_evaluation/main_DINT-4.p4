@@ -8,11 +8,11 @@
 
 /***************************************************************/
 
-const bit<48> tel_insertion_min_window = 2000000;
-const bit<48> obs_window = 2000000; // 1 Seg = 1000000 microseg
+const bit<48> tel_insertion_min_window = 1000000;
+const bit<48> obs_window = 1000000; // 1 Seg = 1000000 microseg
 const bit<48> max_t = 10000000;
 
-const bit<48> alfa_1 = 10;
+const bit<48> alfa_1 = 5;
 const bit<8> alfa_2 = 2; //shift divisor
 
 /***************************************************************/
@@ -20,8 +20,8 @@ const bit<8> alfa_2 = 2; //shift divisor
 const bit<64> div = 0x1999999A; /// Used to divide a number by 10
 const bit<64> div_100 = 0x28F5C29;
 
-const bit<32> N = 8;
-const bit<8> div_shift = 3;
+const bit<32> N = 4;
+const bit<8> div_shift = 2;
 const bit<32> base_delta = 300;
 
 

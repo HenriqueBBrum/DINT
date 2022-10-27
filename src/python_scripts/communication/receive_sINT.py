@@ -18,6 +18,8 @@ frequency_dict = {}
 previous_tel_data = []
 timer = 0
 
+
+
 timeout = 0.01
 min_frequency = 0.01
 

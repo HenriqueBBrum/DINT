@@ -10,7 +10,7 @@ scripts_input_dir=$2
 
 cd ../src 
 
-for i in 2 4 8 16; do
+for i in 2 4 8; do
 
 	make clean
 	p4_src="main_DINT-""$i"".p4"

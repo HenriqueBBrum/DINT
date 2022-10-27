@@ -20,7 +20,7 @@ const bit<8> alfa_2 = 2; //shift divisor
 const bit<64> div = 0x1999999A; /// Used to divide a number by 10
 const bit<64> div_100 = 0x28F5C29;
 
-const bit<32> N = 8;
+const bit<32> k = 8;
 const bit<8> div_shift = 3;
 const bit<32> base_delta = 300;
 
@@ -67,7 +67,7 @@ void update_deltas(inout metadata meta, in bit<32> comparator, inout bit<32> del
     count_reg.read(ct, meta.port_id);
     n_last_values_reg.read(sum, meta.port_id);
 
-    if(ct==N){
+    if(ct==k){
         bit<32> mean; bit<32> old_m;
         mean = sum >> div_shift;
 
