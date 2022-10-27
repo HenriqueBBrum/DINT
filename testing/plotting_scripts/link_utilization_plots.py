@@ -143,57 +143,16 @@ def plot_line_graph(args, sw_type, real_x, real_y, telemetry_y):
     plt.fill_between(real_x, real_y, telemetry_y, step='pre',  interpolate=True, facecolor='black', alpha=0.2, hatch="X")
 
 
-    plt.xlabel("Time(sec)")
-    plt.ylabel("Link utilization ("+args['unit'].upper()+"bits/secs)");
-    plt.title('Real link X Telemetry link')
-    plt.yticks(np.arange(0,5,0.5))
+    plt.xlabel("Time (s)")
+    plt.ylabel("Traffic throughput ("+args['unit'].upper()+"bps)");
+    #plt.title('Real link X Telemetry link')
+    #plt.yticks(np.arange(0,4.5,0.5))
 
     plt.gca().legend()
     plot1.savefig(args['graphs_output_folder']+args['traffic_shape']+'_Real_X_Telemetry_'+sw_type+'_sw'+args['switch_id']+'.png')
     plot1.clf() 
 
 
-# Calculate jitter of each host of the experiment
-def find_jitter(args, sw_type):
-    src_pcapng_files = glob.glob(args['jitter_input_folder']+sw_type+"*.pcapng")
-    dest_csv = glob.glob(args['input_file_folder']+sw_type+"_real*.csv")[0]
-
-    dest_traffic = pd.read_csv(dest_csv)
-   
-    src_data = {}
-    jitter_dict = {}
-
-    for src_file in src_pcapng_files:
-        filename = src_file.split("/")[-1]
-        host = filename[filename.find('h'):filename.find('h')+2]
-        
-        paths = src_file.split("/")
-        filename = paths[-1].split(".")[0]
-        filepath = "/".join(src_file.split("/")[0:-1])+"/"+filename+".csv"
-       
-        os.system("tshark -r "+src_file+" -T fields -e frame.number -e frame.time_epoch -e frame.len -e ip.src -e ip.dst -E header=y -E separator=, > "+filepath)
-        src_data[host] = pd.read_csv(filepath)
-
-    for k, src_traffic in src_data.items():
-        ip_src = src_traffic.iloc[0]['ip.src']
-        sub_dest_traffic = dest_traffic[dest_traffic['ip.src'] == ip_src]
-
-        if(len(sub_dest_traffic['frame.time_epoch'].to_numpy()) != len(src_traffic['frame.time_epoch'].to_numpy())):
-            print(len(sub_dest_traffic['frame.time_epoch'].to_numpy()), len(src_traffic['frame.time_epoch'].to_numpy()))
-            continue
-
-        time_delay = np.subtract(sub_dest_traffic['frame.time_epoch'].to_numpy(), src_traffic['frame.time_epoch'].to_numpy())
-        avg_latency = sum(time_delay)/len(time_delay)
-
-        jitter = 0.0
-        iterations = len(time_delay)-1
-        for idx in range(0, iterations):
-            diff = fabs(time_delay[idx] - time_delay[idx+1])
-            jitter+=diff
-
-        jitter_dict[k] =  (jitter/iterations)*ms
-
-    return jitter_dict
 
 
 
@@ -260,6 +219,8 @@ def main():
         jitter = {'h1': 0, 'h3': 0, 'h4': 0}
         if(args['plot_jitter']):
             jitter = find_jitter(args, sw_type)
+
+        print(jitter)
 
         
         save_rmse_and_telemetry_byte_count(args, sw_type, len(telemetry_x), rmse, telemetry_byte_count, total_telemetry/total_traffic, jitter)

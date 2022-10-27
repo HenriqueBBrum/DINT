@@ -15,24 +15,24 @@
 			"name":"h1",
 			"cmds":["touch sINT_real_output_h1.pcapng", "chmod o=rw sINT_real_output_h1.pcapng",
 					"tshark -i eth0 -w sINT_real_output_h1.pcapng -f \"port 50000 or ether proto 0x6666\" -a duration:65 &",
-					"./python_scripts/communication/send_sINT.py -f python_scripts/input_files/frequency_table.json -a 10.0.2.2 -d 50000 -i 0.011 -s 1400 -t 4 &",
-					"./python_scripts/communication/send_sINT.py -f python_scripts/input_files/frequency_table.json -a 10.0.2.2 -d 50000 -i 0.011 -s 1400 -t 50 -w 10 &"]
+					"./python_scripts/communication/send_sINT.py -f python_scripts/input_files/frequency_table.json -a 10.0.2.2 -d 50000 -i 0.01 -s 1400 -t 4 &",
+					"./python_scripts/communication/send_sINT.py -f python_scripts/input_files/frequency_table.json -a 10.0.2.2 -d 50000 -i 0.01 -s 1400 -t 50 -w 10 &"]
 		},
 		{
 			"name":"h3",
 			"cmds":["touch sINT_real_output_h3.pcapng", "chmod o=rw sINT_real_output_h3.pcapng",
 					"tshark -i eth0 -w sINT_real_output_h3.pcapng -f \"port 50000 and not icmp\" -a duration:65 &",
-					"./python_scripts/communication/send.py -a 10.0.2.2 -d 50000 -i 0.008 -s 1400 -t 5 -w 12 &", 
-					"./python_scripts/communication/send.py -a 10.0.2.2 -d 50000 -i 0.008 -s 1400 -t 5 -w 23 &",
-					"./python_scripts/communication/send.py -a 10.0.2.2 -d 50000 -i 0.003 -s 1400 -t 3 -w 30 &", 
-					"./python_scripts/communication/send.py -a 10.0.2.2 -d 50000 -i 0.003 -s 1400 -t 3 -w 35 &",
-					"./python_scripts/communication/send.py -a 10.0.2.2 -d 50000 -i 0.003 -s 1400 -t 5 -w 48 &"]
+					"./python_scripts/communication/send.py -a 10.0.2.2 -d 50000 -i 0.005 -s 1400 -t 5 -w 12 &", 
+					"./python_scripts/communication/send.py -a 10.0.2.2 -d 50000 -i 0.005 -s 1400 -t 5 -w 23 &",
+					"./python_scripts/communication/send.py -a 10.0.2.2 -d 50000 -i 0.002 -s 1400 -t 3 -w 30 &", 
+					"./python_scripts/communication/send.py -a 10.0.2.2 -d 50000 -i 0.002 -s 1400 -t 3 -w 35 &",
+					"./python_scripts/communication/send.py -a 10.0.2.2 -d 50000 -i 0.002 -s 1400 -t 5 -w 48 &"]
 		},
 		{
 			"name":"h4",
 			"cmds":["touch sINT_real_output_h4.pcapng", "chmod o=rw sINT_real_output_h4.pcapng",
 				"tshark -i eth0 -w sINT_real_output_h4.pcapng -f \"port 50000 and not icmp\" -a duration:65 &",
-				"./python_scripts/communication/send.py -a 10.0.2.2 -d 50000 -i 0.008 -s 1400 -t 11 -w 14 &"]
+				"./python_scripts/communication/send.py -a 10.0.2.2 -d 50000 -i 0.005 -s 1400 -t 11 -w 14 &"]
 		}
 	]
 

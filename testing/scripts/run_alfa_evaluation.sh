@@ -10,17 +10,14 @@ scripts_input_dir=$2
 
 cd ../src 
 
-for i in 125 150 200 250; do
+for i in 125 150 200; do
 
 	make clean
 	p4_src="main_DINT-""$i"".p4"
-	echo $p4_src
 	make P4_SRC=$p4_src TEST_JSON=$config_files_folder/DINT_no_jitter_tcpreplay.json
 
 	new_name="DINT-""$i"
-	echo $new_name
 	for file in $scripts_input_dir/pkts_output/DINT_*; do 
-		echo $file
 		mv $file ${file//DINT/$new_name} 
 	done
 

@@ -7,11 +7,29 @@ from collections import OrderedDict
 import glob
 
 
-# To plot comparison rmse/telemetry/jitter graphs used reverse=True in line 208 and reverse=False for parameters eval
+# To plot comparison rmse/telemetry graphs used reverse=True in line 208 and reverse=False for parameters eval
 
 
 metric_unit = {'b': 1, 'k':1000, 'm':1000000, 'g':1000000000}
 
+hatches = ['\\', '.', 'x', '-', 'x', 'o', 'O', '.', '*']
+
+lint_comparison = True
+
+
+# plt.rcParams['axes.prop_cycle'] = plt.cycler(color=["lightblue", "cornflowerblue", "mediumblue"]) 
+# legend = ["α=1.25s", "α=1.5s", "α=2.0s"]
+
+# plt.rcParams['axes.prop_cycle'] = plt.cycler(color=["paleturquoise", "mediumslateblue", "navy"]) 
+# legend = ["$\\it{k}$=2", "$\\it{k}$=4", "$\\it{k}$=8"]
+
+plt.rcParams['axes.prop_cycle'] = plt.cycler(color=["tab:orange", "tab:green", "tab:red", "tab:blue"]) 
+legend = ["static", "sINT", "LINT", "DINT"]
+
+font = {'family' : 'normal',
+        'size'   : 13}
+
+plt.rc('font', **font)
 
 
 # Arguments that need to be informed for this program
@@ -20,7 +38,6 @@ def parse_args():
     parser.add_argument('-i', '--file_folder', type=str, help="Folder with input files", required=True)
     parser.add_argument('-g', '--graphs_output_folder', type=str, help="Folder for output files", required=True)
     parser.add_argument('-u', '--unit', type=str, help = "Metric Unit (b, k, m, g)", required=False, default="b")
-    parser.add_argument('--jitter', type=str, help = "Plot jitter graphs?", required=False, default="false")
 
 
     return vars(parser.parse_args())
@@ -45,8 +62,8 @@ def add_value_labels(ax, decimal_format=2, spacing=8, y_spacing=0, color='black'
             textcoords="offset points", # Interpret `xytext` as offset in points
             ha='center',                # Horizontally center label
             va='bottom',                      # Vertically align label for positive values ('bottom' for positive, 'top' for negatives).
-            color=rect.get_facecolor(),
-            fontsize=9)       
+            color=color
+            )       
 
 
 # pos = postion in data to be used, mult is the scale factor
@@ -71,6 +88,10 @@ def crete_bar_graph_rects(data, pos, mult):
 
     return labels, rects, sw_type_count
 
+
+
+
+
 # Plots a bar graph provied the destination file, tile, ylabel legend, the bars to be drwan, 
 def plot_bar_graph(filepath, title, ylabel, labels, rects, sw_type_count, label_decimal_house):
     fig, ax = plt.subplots(figsize=(8,5))
@@ -84,16 +105,17 @@ def plot_bar_graph(filepath, title, ylabel, labels, rects, sw_type_count, label_
     width=0.20
     ct = 0
 
+
     for k, v in rects.items():
         ct = ct +1
 
         x = sw_type_count_x_map[k]
-        r = ax.bar(x+width*ct, v[0], width, yerr=v[1], label=k.capitalize(), hatch='\\', align='center', capsize=3, 
+        r = ax.bar(x+width*ct, v[0], width, yerr=v[1], label=k.capitalize(), hatch=hatches[ct-1], align='center', capsize=3, 
             error_kw={'elinewidth':1, 'alpha':0.65})
 
    
     add_value_labels(ax, label_decimal_house, y_spacing=-2)
-    ax.set_title(title)
+    #ax.set_title(title)
     ax.set_ylabel(ylabel)
     
 
@@ -102,21 +124,21 @@ def plot_bar_graph(filepath, title, ylabel, labels, rects, sw_type_count, label_
         local_max = max(rect[0])
         if(local_max > max_): max_ = local_max
     
-    ax.set_ylim([0, max_+0.5*max_])
+    ax.set_ylim([0, max_+0.25*max_])
 
     ax.set_xticks(np.arange(0.5, len(labels), 1), list(dict.fromkeys(labels)))
-    ax.set_xlabel('Telemetry push time (s)')
+    ax.set_xlabel('Telemetry insertion time (s)')
 
     h1, l1 = ax.get_legend_handles_labels()
     l1 = [x.upper() for x in l1]
-    ax.legend(h1, l1, loc='upper right')
+    ax.legend(h1, l1, ncol=len(legend))
 
     fig.tight_layout()  # otherwise the right y-label is slightly clipped
     fig.savefig(filepath)
 
     
 
-# Plot all bar graphs (RMSE, telemetr overhead and jitter)
+# Plot all bar graphs (RMSE and telemetry overhead)
 def plot_graphs(args, traffic_type, sw_id, total_time, data, unit):
     output_folder = args['graphs_output_folder']
 
@@ -124,34 +146,18 @@ def plot_graphs(args, traffic_type, sw_id, total_time, data, unit):
         return
 
     rmse_exp_title = 'Measurement Error - '+'(SW'+sw_id+', '+total_time+'s)'
-    rmse_exp_fp = output_folder+traffic_type+'_RMSE_E_'+sw_id+'_'+total_time.split('.')[0]+'s.png'
-    plot_bar_graph(rmse_exp_fp, rmse_exp_title, 'NRMSE (%)', *crete_bar_graph_rects(data, 1, 100), "1")
+    rmse_exp_fp = output_folder+traffic_type+'_RMSE_'+sw_id+'_'+total_time.split('.')[0]+'s.png'
+    plot_bar_graph(rmse_exp_fp, rmse_exp_title, 'NRMSE  (%)', *crete_bar_graph_rects(data, 1, 100), "1")
+
+
+    byte_cnt_title = 'Telemetry Overhead S - '+'(SW'+sw_id+', '+total_time+'s)'
+    byte_cnt_fp = output_folder+traffic_type+'_Tel_Overhead_'+sw_id+'_'+total_time.split('.')[0]+'s.png'
+    plot_bar_graph(byte_cnt_fp, byte_cnt_title, 'Total Overhead (KBytes)', *crete_bar_graph_rects(data, 2, 1/metric_unit[args['unit']]), "1")
 
 
     # byte_cnt_title = 'Telemetry Overhead - '+'(SW'+sw_id+', '+total_time+'s)'
     # byte_cnt_fp = output_folder+traffic_type+'_Tel_Overhead_'+sw_id+'_'+total_time.split('.')[0]+'s.png'
-    # plot_bar_graph(byte_cnt_fp, byte_cnt_title, 'Total Overhead (%)', *crete_bar_graph_rects(data, 2, metric_unit[args['unit']]), "0")
-
-
-    byte_cnt_title = 'Telemetry Overhead - '+'(SW'+sw_id+', '+total_time+'s)'
-    byte_cnt_fp = output_folder+traffic_type+'_Tel_Overhead_'+sw_id+'_'+total_time.split('.')[0]+'s.png'
-    plot_bar_graph(byte_cnt_fp, byte_cnt_title, 'Overhead compared to Total traffic (%)', *crete_bar_graph_rects(data, 3, 100), "3")
-
-    if(args['jitter']=="true"):
-        h1_title = 'H1 Jitter - '+'(SW'+sw_id+', '+total_time+'s)'
-        h1_fp = output_folder+traffic_type+'_H1_Jitter_'+sw_id+'_'+total_time.split('.')[0]+'s.png'
-        plot_bar_graph(h1_fp, h1_title, 'Milliseconds', *crete_bar_graph_rects(data, 4, 1), "2")
-
-        h3_title = 'H3 Jitter - '+'(SW'+sw_id+', '+total_time+'s)'
-        h3_fp = output_folder+traffic_type+'_H3_Jitter_'+sw_id+'_'+total_time.split('.')[0]+'s.png'
-        plot_bar_graph(h3_fp, h3_title, 'Milliseconds', *crete_bar_graph_rects(data, 5, 1), "2")
-
-        h4_title = 'H4 Jitter - '+'(SW'+sw_id+', '+total_time+'s)'
-        h4_fp = output_folder+traffic_type+'_H4_Jitter_'+sw_id+'_'+total_time.split('.')[0]+'s.png'
-        plot_bar_graph(h4_fp, h4_title, 'Milliseconds', *crete_bar_graph_rects(data, 6, 1), "2")
-
-
-
+    # plot_bar_graph(byte_cnt_fp, byte_cnt_title, 'Overhead compared to Total traffic (%)', *crete_bar_graph_rects(data, 3, 100), "3")
 
 
 def main():
@@ -172,7 +178,6 @@ def main():
                 f_key = row['sw_id']+"_"+row['experiment_time']
                 s_key = row['sw_type']+"_"+row['min_telemetry_push_time']
 
-                jitter = eval(row['jitter']) # Jitter is saved as a string representing a dict. Convert to an actual dict
                 min_times[row['min_telemetry_push_time']] = 1
 
                 if (f_key+s_key) in my_dict:
@@ -182,18 +187,12 @@ def main():
                     byte_cnt_lst.append(float(row['telemetry_byte_count']))
                     percentage_byte_lst.append(float(row['telemetry_percentage']))
 
-                    h1_jitter_lst.append(float(jitter['h1']))
-                    h3_jitter_lst.append(float(jitter['h3']))
-                    h4_jitter_lst.append(float(jitter['h4']))
-
-
                     updated_value = (float(count+1),rmse_list, byte_cnt_lst, percentage_byte_lst, h1_jitter_lst, h3_jitter_lst, h4_jitter_lst, previous_experiment_time+float(row['experiment_time']))
 
                     my_dict[(f_key+s_key)] = updated_value
                     graph_dict[f_key][s_key] = updated_value
                 else:
-                    value = (1, [float(row['rmse'])], [float(row['telemetry_byte_count'])], [float(row['telemetry_percentage'])], [float(jitter['h1'])], 
-                        [float(jitter['h3'])], [float(jitter['h4'])], float(row['experiment_time']))
+                    value = (1, [float(row['rmse'])], [float(row['telemetry_byte_count'])], [float(row['telemetry_percentage'])], float(row['experiment_time']))
                     
                     my_dict[(f_key+s_key)] = value
                     if f_key not in graph_dict:
@@ -205,13 +204,8 @@ def main():
 
         final_dict = OrderedDict()
         for f_k in graph_dict.keys():
-            order = sorted(graph_dict[f_k].keys(), reverse=False)
+            order = sorted(graph_dict[f_k].keys(), reverse=lint_comparison) # False for parameters
             ordered_keys = order
-            print(ordered_keys)
-
-            # Uncomment this lines if using the evaluation of the parameter N of DINT
-            # ordered_keys = order[len(min_times):]
-            # ordered_keys.extend(order[0:len(min_times)])
 
             sub = []
             for i in range(0, len(ordered_keys), len(min_times)):
