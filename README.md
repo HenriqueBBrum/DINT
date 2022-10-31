@@ -71,8 +71,7 @@ To reproduce the results obtained in the paper [DINT: A Dynamic Algorithm for In
 
 You first need to move the P4 files of the desired test from their folder (in _src/DINT*_) to the parent folder (_src/_). After that, you need to execute the *run_testing.sh* file informing the specific evaluation script in the *testing/scripts* argument as well as the rest of the parameters. In the article we used 0.25, 0.5 and 1 for the <min_time> arguments and used 5 for the <loops> parameter.
 
-Obs: One of our future plans is to have only one DINT\*.p4 file for the evaluation and just change the desired parameters. The current approach needs to be optimized...  
-
+Obs: One of our future plans is to have only one DINT\*.p4 file for the evaluation and just change the desired parameters. 
 
 ### Customization
 
@@ -106,6 +105,3 @@ To create a new topology, check the ones in the *src/topologies* folder, but the
 #### Testing configuration
 
 Finally, it's possible to specify the desired testing configuration. First, go to the *testing/config_files* and check the structure of the configuration files. In the configuration files, it's possible to define the testing time and what happens in each device specified in the topology file. Essentially, each device needs to either send or receive traffic. Since the configuration files receive shell commands, you can easily customize them to send any traffic you want (Scapy, IPerf, DITG, etc.) and to receive and process the incoming packets as desired. Keep in mind that the commands are executed sequentially, starting with the first defined device in your configuration file. Besides that, commands block other commands, so always put an "&" after a command if it is a non-blocking command.
-=======
-Information on how to customize the P4 program, test topology, and evaluation traffic.
->>>>>>> 913bfb2d7e25f748bc2cc340b0e848e8d0ede4df
