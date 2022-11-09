@@ -10,7 +10,7 @@ This repository contains the necessary tools and
 
 To run DINT, follow the instructions in the section *Obtaining required software* in the [P4 tutorials Repository](https://github.com/p4lang/tutorials).
 
-After completing those steps, open the VM and clone this repo with the following command: 
+After completing those steps, open the VM, **go to the \~/Documents folder** and clone this repo with the following command: 
 
 ```
 git clone -b main --single-branch https://github.com/HenriqueBBrum/DINT.git 
