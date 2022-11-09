@@ -12,8 +12,8 @@ const bit<48> tel_insertion_min_window = 1000000;
 const bit<48> obs_window = 1000000; // 1 Seg = 1000000 microseg
 const bit<48> max_t = 10000000;
 
-const bit<48> alfa_1 = 5;
-const bit<8> alfa_2 = 2; //shift divisor
+const bit<48> alpha_1 = 5;
+const bit<8> alpha_2 = 2; //shift divisor
 
 /***************************************************************/
 
@@ -112,7 +112,7 @@ void update_telemetry_insertion_time(inout metadata meta, inout standard_metadat
         if(delta_bytes > (int<32>)delta || delta_bytes < -1*((int<32>)delta)){
             tel_insertion_window = tel_insertion_min_window; // Decreases time if bytes difference was bigger than expected
         }else{
-            tel_insertion_window = min(max_t, (tel_insertion_window*alfa_1)>>alfa_2); // Increases time if bytes difference was smaller than expected
+            tel_insertion_window = min(max_t, (tel_insertion_window*alpha_1)>>alpha_2); // Increases time if bytes difference was smaller than expected
         }
 
         update_deltas(meta, pres_amt_bytes, delta);

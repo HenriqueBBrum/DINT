@@ -1,17 +1,31 @@
-
-
 # DINT: A Dynamic Algorithm for In-band Network Telemetry
 
 DINT is a dynamic in-band network telemetry algorithm that keeps an accurate view of the network information while causing minimal network overhead in programmable networks. 
 
-This repository contains the necessary tools and information to run DINT and the other solutions compared in the article. The results obtained and used in the article are also stored here. 
+This repository contains the necessary tools and 
+ to run DINT and the other solutions compared in the article. The results obtained and used in the article are also stored here. 
 
 
 ## Installation Guide
 
 To run DINT, follow the instructions in the section *Obtaining required software* in the [P4 tutorials Repository](https://github.com/p4lang/tutorials).
 
-After completing those steps, open the VM, clone this repo, and you're ready to test DINT.
+After completing those steps, open the VM and clone this repo with the following command: 
+
+```
+git clone -b main --single-branch https://github.com/HenriqueBBrum/DINT.git 
+
+```
+
+If you would also like to clone the results used in the DINT article run this:
+
+```
+git clone https://github.com/HenriqueBBrum/DINT.git 
+
+```
+
+That's it, now you can start testing DINT!
+
 
 ## Python prerequisites 
 
@@ -21,12 +35,6 @@ Even though you can execute P4 programs just with the installation step before, 
 pip install matplotlib numpy pandas scapy
 ```
 
-## Branches
-
-There are two branches in this repository:
-* main: This branch contains all the source code used in the article
-* results: In this branch all the results obtained are stored
-
 ## Usage Guide
 
 
@@ -35,7 +43,7 @@ DINT and the other algorithms can be automatically tested by running the script 
 ./run_evaluation.sh <test_script> <results_output_folder> <min_time> <loops>
 
 ```
-* test_script: It can be one of these three values, scripts/run_comparison_evaluation.sh, scripts/run_alfa_evaluation.sh, or run_k_evaluation.sh. Correspondingly, the P4 files in the src folder should be related to those evaluation scripts. The default P4 files are for the "comparison" evaluation. If you want to run another evaluation script, move the current P4 file to their *DINT* folder and the correct P4 files outside their *DINT* folder.
+* test_script: It can be one of these three values, scripts/run_comparison_evaluation.sh, scripts/run_alpha_evaluation.sh, or run_k_evaluation.sh. Correspondingly, the P4 files in the src folder should be related to those evaluation scripts. The default P4 files are for the "comparison" evaluation. If you want to run another evaluation script, move the current P4 file to their *DINT* folder and the correct P4 files outside their *DINT* folder.
 
 * results_output_folder: Folder where the resulting files and graphs will be stored.
 
@@ -47,8 +55,8 @@ The *run_testing.sh* script builds each type of switch  (DINT, LINT, etc.) and r
 
 After each algorithm has finished, the results are used with two python scripts to compare them. The scripts are inside the *evaluation_scripts* folder:
 
-* *link_utilization_plots.py*: This script plots a comparison between the real link utilization (seen by the destination host) and the telemetry link utilization (seen by the monitoring host). It also calculates the RMSE, telemetry overhead, and jitter and saves it to another file.
-* *comparison_plots.py* This file creates multiple bar graphs of RMSE, telemetry overhead, and jitter metrics.
+* *link_utilization_plots.py*: This script plots a comparison between the real link utilization (seen by the destination host) and the telemetry link utilization (seen by the monitoring host). It also calculates the RMSE and telemetry overhead and saves it to another file.
+* *comparison_plots.py* This file creates multiple bar graphs of RMSE and telemetry overhea.
 
 
 To test each switch type individually, go to the *src* folder and first clean the environment.
@@ -109,3 +117,12 @@ To create a new topology, check the ones in the *src/topologies* folder, but the
 #### Testing configuration
 
 Finally, it's possible to specify the desired testing configuration. First, go to the *testing/config_files* and check the structure of the configuration files. In the configuration files, it's possible to define the testing time and what happens in each device specified in the topology file. Essentially, each device needs to either send or receive traffic. Since the configuration files receive shell commands, you can easily customize them to send any traffic you want (Scapy, IPerf, DITG, etc.) and to receive and process the incoming packets as desired. Keep in mind that the commands are executed sequentially, starting with the first defined device in your configuration file. Besides that, commands block other commands, so always put an "&" after a command if it is a non-blocking command.
+
+
+
+## Branches
+
+There are two branches in this repository:
+
+* _main_: This branch contains all the source code used in the article.
+* _results_: In this branch all the results obtained are stored.

@@ -2,7 +2,7 @@
 
 
 # Generate link utilizaion step plots with matplotlib for each 'type' of switch.
-# This script also calculates the rmse, telemetry overhead and jitter (from all source hosts) of each 'type'
+# This script also calculates the rmse and telemetry overhead  of each 'type'
 
 import matplotlib.pyplot as plt
 from math import sqrt, fabs, ceil
@@ -26,7 +26,6 @@ def parse_args():
 
     parser = argparse.ArgumentParser(description=f"Send packets to a certain ip and port")
     parser.add_argument('-i', '--input_file_folder', type=str, help="Folder with input files")
-    parser.add_argument('-j', '--jitter_input_folder', type=str, help = "Jitter calculation input files", required=False)
     parser.add_argument('-g', '--graphs_output_folder', type=str, help="Folder for output graph files")
     parser.add_argument('-r', '--rmse_output_folder', type=str, help="Folder for output rmse and byte overhead files")
     parser.add_argument('-d', '--experiment_duration', type=float, help="Duration of the experiment'")
@@ -34,7 +33,6 @@ def parse_args():
     parser.add_argument('-s', '--switch_id', type=str, help="Switch id to be compared")
     parser.add_argument('-t', '--traffic_shape', type=str, help = "RMSE traffic shape name", required=False, default="no_type")
     parser.add_argument('-u', '--unit', type=str, help = "Metric Unit (k, m, g)", required=False, default="k")
-    parser.add_argument('--plot_jitter', action='store_true')
 
 
 
@@ -156,13 +154,13 @@ def plot_line_graph(args, sw_type, real_x, real_y, telemetry_y):
 
 
 
-# Saves to a specific file rmse(%), byte count(Bytes) and jitter(ms) information
-def save_rmse_and_telemetry_byte_count(args, sw_type, telemetry_pkts_count, rmse, telemetry_byte_count, telemetry_percentage, jitter):
+# Saves to a specific file rmse(%) and byte count(Bytes) information
+def save_rmse_and_telemetry_byte_count(args, sw_type, telemetry_pkts_count, rmse, telemetry_byte_count, telemetry_percentage):
     filepath = args['rmse_output_folder']+args['traffic_shape']+".csv"
     file_exists = os.path.isfile(filepath)
 
     with open(filepath, "a") as csvfile:
-        headers = ['sw_type', 'sw_id', 'min_telemetry_push_time', 'experiment_time', 'packet_count', 'rmse', 'telemetry_byte_count', 'telemetry_percentage','jitter']
+        headers = ['sw_type', 'sw_id', 'min_telemetry_push_time', 'experiment_time', 'packet_count', 'rmse', 'telemetry_byte_count', 'telemetry_percentage']
         writer = csv.DictWriter(csvfile, delimiter=',', lineterminator='\n',fieldnames=headers)
 
         if not file_exists:
@@ -170,7 +168,7 @@ def save_rmse_and_telemetry_byte_count(args, sw_type, telemetry_pkts_count, rmse
 
         writer.writerow({'sw_type': sw_type, 'sw_id':args['switch_id'], 'min_telemetry_push_time': args['min_telemetry_push_time'], 
                     'experiment_time': args['experiment_duration'], 'packet_count': telemetry_pkts_count, 
-                        'rmse': rmse, 'telemetry_byte_count': telemetry_byte_count, 'telemetry_percentage': telemetry_percentage, 'jitter': jitter})
+                        'rmse': rmse, 'telemetry_byte_count': telemetry_byte_count, 'telemetry_percentage': telemetry_percentage})
 
 
 
@@ -215,15 +213,8 @@ def main():
         rmse = sqrt(np.square(np.subtract(real_y, tel_y)).mean())
         rmse = rmse/(max(real_y) - min(real_y))
         print("rmse", rmse)
-
-        jitter = {'h1': 0, 'h3': 0, 'h4': 0}
-        if(args['plot_jitter']):
-            jitter = find_jitter(args, sw_type)
-
-        print(jitter)
-
         
-        save_rmse_and_telemetry_byte_count(args, sw_type, len(telemetry_x), rmse, telemetry_byte_count, total_telemetry/total_traffic, jitter)
+        save_rmse_and_telemetry_byte_count(args, sw_type, len(telemetry_x), rmse, telemetry_byte_count, total_telemetry/total_traffic)
        
 
 
