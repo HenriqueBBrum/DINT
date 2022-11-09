@@ -8,10 +8,10 @@
 
 
 
-const bit<8> alfa = 1; // Equals to 2^-1
+const bit<8> alpha = 1; // Equals to 2^-1
 const bit<8> delta = 6; // Equals to 2^-1
 
-const bit<48> observation_window = 2000000; // 1 Seg = 1000000 microseg
+const bit<48> observation_window = 1000000; // 1 Seg = 1000000 microseg
 
 
 
@@ -52,7 +52,7 @@ bit<1> report_metrics(inout metadata meta, in bit<32> pres_amt_bytes){
     past_device_obs_reg.read(past_device_obs, meta.port_id);
     past_reported_obs_reg.read(past_reported_obs, meta.port_id);
 
-    int<32> latest_device_obs = (current_obs - ((int<32>)past_device_obs))>>alfa; 
+    int<32> latest_device_obs = (current_obs - ((int<32>)past_device_obs))>>alpha; 
     latest_device_obs = latest_device_obs + (int<32>)past_device_obs;
     if(past_device_obs == 0){
         latest_device_obs = current_obs;
@@ -62,7 +62,7 @@ bit<1> report_metrics(inout metadata meta, in bit<32> pres_amt_bytes){
     if(deviation > latest_device_obs>>delta || deviation < -1*(latest_device_obs>>delta)){
         report = 1;
 
-        int<32> latest_reported_obs = (current_obs - (int<32>)past_reported_obs)>>alfa;
+        int<32> latest_reported_obs = (current_obs - (int<32>)past_reported_obs)>>alpha;
         latest_reported_obs = latest_reported_obs + (int<32>)past_reported_obs;
         if(past_reported_obs == 0){
             latest_reported_obs = current_obs;

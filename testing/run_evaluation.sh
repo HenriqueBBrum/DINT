@@ -1,8 +1,11 @@
 #!/bin/bash
 
+# This is the main file to execute any type of experiment. 
+# With this file it's possible to execute multiple experiments of a a single configuration.
 
-testing_scripts_folder=~/Documents/Masters/testing/plotting_scripts
-scripts_input_dir=~/Documents/Masters/testing/results
+
+testing_scripts_folder=~/Documents/DINT/testing/plotting_scripts
+scripts_input_dir=~/Documents/DINT/testing/results
 
 
 evaluation_file=$1
@@ -23,7 +26,7 @@ for ((i = 1; i <= "$loops"; i++ )); do
 
 	if [ "$i" -eq "$loops" ] 
 	then
-		python3 $testing_scripts_folder/comparison_plots.py -i $scripts_input_dir/graphs_input/ -g $scripts_input_dir/graphs_output/ 
+		python3 $testing_scripts_folder/comparison_plots.py -i $scripts_input_dir/graphs_input/ -g $scripts_input_dir/graphs_output/ -e $evaluation_file
 	fi
 
 	sh ./scripts/copy_and_remove.sh "$folder" 

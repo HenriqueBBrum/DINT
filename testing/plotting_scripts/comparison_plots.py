@@ -14,17 +14,6 @@ metric_unit = {'b': 1, 'k':1000, 'm':1000000, 'g':1000000000}
 
 hatches = ['\\', '.', 'x', '-', 'x', 'o', 'O', '.', '*']
 
-lint_comparison = True
-
-
-# plt.rcParams['axes.prop_cycle'] = plt.cycler(color=["lightblue", "cornflowerblue", "mediumblue"]) 
-# legend = ["α=1.25s", "α=1.5s", "α=2.0s"]
-
-# plt.rcParams['axes.prop_cycle'] = plt.cycler(color=["paleturquoise", "mediumslateblue", "navy"]) 
-# legend = ["$\\it{k}$=2", "$\\it{k}$=4", "$\\it{k}$=8"]
-
-plt.rcParams['axes.prop_cycle'] = plt.cycler(color=["tab:orange", "tab:green", "tab:red", "tab:blue"]) 
-legend = ["static", "sINT", "LINT", "DINT"]
 
 font = {'family' : 'normal',
         'size'   : 13}
@@ -37,6 +26,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', '--file_folder', type=str, help="Folder with input files", required=True)
     parser.add_argument('-g', '--graphs_output_folder', type=str, help="Folder for output files", required=True)
+    parser.add_argument('-e', '--experiment', type=str, help = "The type of experiment (k, alpha or comparison)", required=True)
     parser.add_argument('-u', '--unit', type=str, help = "Metric Unit (b, k, m, g)", required=False, default="b")
 
 
@@ -131,7 +121,7 @@ def plot_bar_graph(filepath, title, ylabel, labels, rects, sw_type_count, label_
 
     h1, l1 = ax.get_legend_handles_labels()
     l1 = [x.upper() for x in l1]
-    ax.legend(h1, l1, ncol=len(legend))
+    ax.legend(h1, l1, ncol=len(l1))
 
     fig.tight_layout()  # otherwise the right y-label is slightly clipped
     fig.savefig(filepath)
@@ -164,6 +154,22 @@ def main():
     args = parse_args()
     rmse_and_byte_cnt_files = glob.glob(args['file_folder']+"*.csv")
 
+    lint_comparison = False
+    if "comparison" in args['experiment']:
+        plt.rcParams['axes.prop_cycle'] = plt.cycler(color=["tab:orange", "tab:green", "tab:red", "tab:blue"]) 
+        legend = ["static", "sINT", "LINT", "DINT"]
+
+        lint_comparison = True
+    else:
+        if "alpha" in args['experiment']:
+            plt.rcParams['axes.prop_cycle'] = plt.cycler(color=["lightblue", "cornflowerblue", "mediumblue"]) 
+            legend = ["α=1.25s", "α=1.5s", "α=2.0s"]
+        elif "k" in args['experiment']:
+            plt.rcParams['axes.prop_cycle'] = plt.cycler(color=["paleturquoise", "mediumslateblue", "navy"]) 
+            legend = ["$\\it{k}$=2", "$\\it{k}$=4", "$\\it{k}$=8"]
+
+
+
     for f in rmse_and_byte_cnt_files:
         traffic_type = (f.split("/")[-1].split(".")[0]).split("_")[0]
 
@@ -181,13 +187,13 @@ def main():
                 min_times[row['min_telemetry_push_time']] = 1
 
                 if (f_key+s_key) in my_dict:
-                    count, rmse_list, byte_cnt_lst, percentage_byte_lst, h1_jitter_lst, h3_jitter_lst, h4_jitter_lst, previous_experiment_time = my_dict[(f_key+s_key)]
+                    count, rmse_list, byte_cnt_lst, percentage_byte_lst, previous_experiment_time = my_dict[(f_key+s_key)]
 
                     rmse_list.append(float(row['rmse']))
                     byte_cnt_lst.append(float(row['telemetry_byte_count']))
                     percentage_byte_lst.append(float(row['telemetry_percentage']))
 
-                    updated_value = (float(count+1),rmse_list, byte_cnt_lst, percentage_byte_lst, h1_jitter_lst, h3_jitter_lst, h4_jitter_lst, previous_experiment_time+float(row['experiment_time']))
+                    updated_value = (float(count+1),rmse_list, byte_cnt_lst, percentage_byte_lst, previous_experiment_time+float(row['experiment_time']))
 
                     my_dict[(f_key+s_key)] = updated_value
                     graph_dict[f_key][s_key] = updated_value
