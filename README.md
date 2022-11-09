@@ -81,7 +81,7 @@ To reproduce the results obtained in the paper [DINT: A Dynamic Algorithm for In
 3. Comparison between DINT alternatives
 
 
-You first need to move the P4 files of the desired test from their folder (in _src/DINT*_) to the parent folder (_src/_). After that, you need to execute the *run_testing.sh* file informing the specific evaluation script in the *testing/scripts* argument as well as the rest of the parameters. In the article we used 0.25, 0.5 and 1 for the <min_time> arguments and used 5 for the <loops> parameter. Besides the change in your execution command you also need to change in the P4 file.
+You first need to move the P4 files of the desired test from their folder (in _src/DINT*_) to the parent folder (_src/_). After that, execute the *run_testing.sh* script informing the specific evaluation file in the *testing/scripts* folder as well as the rest of the parameters already mentioned. In the article we used 0.25, 0.5 and 1 for the <min_time> arguments and used 5 for the <loops> parameter. Besides changing the <min_time> in your execution command you also need to change the _obs_window_ variable in the DINT and LINT files and the _tel_insertion_min_window_ in the DINT files to be your <min_time>. Note that the time in p4 is in microseconds.
 
 Obs: One of our future plans is to have only one DINT\*.p4 file for the evaluation and just change the desired parameters. 
 
