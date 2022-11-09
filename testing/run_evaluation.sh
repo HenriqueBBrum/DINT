@@ -17,6 +17,12 @@ echo "$1"
 echo "$2"
 echo "$3"
 
+mkdir $scripts_input_dir
+mkdir $scripts_input_dir/graphs_input/
+mkdir $scripts_input_dir/graphs_output/
+mkdir $scripts_input_dir/pkts_output/
+
+
 
 for ((i = 1; i <= "$loops"; i++ )); do
 	/bin/bash ./"$evaluation_file" "$min_time" $scripts_input_dir
