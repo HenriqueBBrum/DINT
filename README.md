@@ -21,7 +21,11 @@ Even though you can execute P4 programs just with the installation step before, 
 pip install matplotlib numpy pandas scapy
 ```
 
+## Branches
 
+There are two branches in this repository:
+* main: This branch contains all the source code used in the article
+* results: In this branch all the results obtained are stored
 
 ## Usage Guide
 
