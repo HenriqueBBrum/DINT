@@ -24,12 +24,20 @@ git clone https://github.com/HenriqueBBrum/DINT.git
 
 ```
 
+Finally, install tcpreplay to replay the exeperiments used in the paper.
+
+```
+
+sudo apt-get install tcpreplay
+
+```
+
 That's it, now you can start testing DINT!
 
 
 ## Python prerequisites 
 
-Even though you can execute P4 programs just with the installation step before, to execute the python scripts used in this work, you need to install the following python packages:
+Even though you can execute P4 programs and get the resulting files just with the installation steps before, to execute the graph plotting python scripts used in this work you need to install the following python packages:
 
 ```
 pip install matplotlib numpy pandas scapy
