@@ -14,22 +14,18 @@ After completing those steps, open the VM, **go to the \~/Documents folder** and
 
 ```
 git clone -b main --single-branch https://github.com/HenriqueBBrum/DINT.git 
-
 ```
 
 If you would also like to clone the results used in the DINT article run this:
 
 ```
 git clone https://github.com/HenriqueBBrum/DINT.git 
-
 ```
 
 Finally, install tcpreplay to replay the exeperiments used in the paper.
 
 ```
-
 sudo apt-get install tcpreplay
-
 ```
 
 That's it, now you can start testing DINT!
@@ -49,7 +45,6 @@ pip install matplotlib numpy pandas scapy
 DINT and the other algorithms can be automatically tested by running the script *run_testing.sh* in the *testing* folder. Remember to give execution permission with *chmod*.
 ```
 ./run_evaluation.sh <test_script> <results_output_folder> <min_time> <loops>
-
 ```
 * test_script: It can be one of these three values, scripts/run_comparison_evaluation.sh, scripts/run_alpha_evaluation.sh, or run_k_evaluation.sh. Correspondingly, the P4 files in the src folder should be related to those evaluation scripts. The default P4 files are for the "comparison" evaluation. If you want to run another evaluation script, move the current P4 file to their *DINT* folder and the correct P4 files outside their *DINT* folder.
 
