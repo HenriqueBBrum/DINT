@@ -125,7 +125,20 @@ void update_telemetry_insertion_time(inout metadata meta, inout standard_metadat
     }
 }
 
-
+void five_tuple_hash(inout headers hdr, inout metadata meta){
+    hash(meta.flow_id, 
+    HashAlgorithm.crc32,
+    (bit<32>)0,
+    {
+        hdr.ipv4.src_addr,
+        hdr.udp.src_port,
+        hdr.ipv4.dst_addr,
+        hdr.udp.dst_port,
+        hdr.ipv4.protocol
+    },
+    (bit<32>)0xFFFFFFFF
+    )
+}
 
 control MyIngress(inout headers hdr,
                   inout metadata meta,
@@ -177,7 +190,7 @@ control MyIngress(inout headers hdr,
             ipv4_lpm.apply();
 
             if(hdr.udp.isValid()){
-                //five_tuple_hash(hdr, meta);
+                five_tuple_hash(hdr, meta);
 
                 meta.port_id = 0; //(bit<32>)standard_metadata.egress_spec;
 
@@ -242,7 +255,7 @@ control MyIngress(inout headers hdr,
 
 
 
-void insert_telemetry(inout headers hdr, inout metadata meta,in bit<32> tel_amt_bytes){
+void insert_telemetry(inout headers hdr, inout metadata meta, in bit<32> tel_amt_bytes){
         if(!hdr.telemetry.isValid()){
             hdr.telemetry.setValid();
             hdr.telemetry.hop_cnt = 0;

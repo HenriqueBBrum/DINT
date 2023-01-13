@@ -17,10 +17,10 @@ class Telemetry_Data(Packet):
    name = "Telemetry_Data"
    fields_desc = [ BitField("bos", 0, 1),
                    BitField("sw_id", 0, 7),
-                   IntField("port_id", 0),
+                   IntField("flow_id", 0),
                    IntField("amt_bytes", 0),
-                   BitField("last_time", 0, 48),
-                   BitField("curr_time", 0, 48)]
+                   BitField("prev_timestamp", 0, 48),
+                   BitField("curr_timestamp", 0, 48)]
 
 
 bind_layers(Ether, Telemetry, type=TYPE_Telemetry)
