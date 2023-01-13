@@ -6,7 +6,7 @@
 #define PKT_INSTANCE_TYPE_REPLICATION 5
 #define PKT_INSTANCE_TYPE_RESUBMIT 6
 
-#define MAX_FLOWS 1024 // Maximum number of flows
+#define MAX_FLOWS 65536 // Maximum number of flows
 #define MAX_PORTS 10
 #define MAX_HOPS 8 // Maximum number of hops of a telemetry packet
 
@@ -53,7 +53,7 @@ header telemetry_t{
 header telemetry_data_t{
     bit<1> bos;
     bit<7> sw_id;
-    bit<32> port_id;
+    bit<32> flow_id;
 
     // monitoring values
     bit<32> amt_bytes;
@@ -93,7 +93,7 @@ struct metadata {
     bit<7> sw_id;
 
     @field_list(COPY_INDEX)
-    bit<32> port_id;
+    bit<32> flow_id;
     @field_list(COPY_INDEX)
     bit<48> last_time;
     @field_list(COPY_INDEX)
