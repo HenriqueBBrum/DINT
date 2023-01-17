@@ -23,6 +23,8 @@ class Flow:
     self.elephant = False
     self.elephant_classification_timestamp = 0
 
+    #self.switch_data = {}
+
     self.check_elephant()
 
 
@@ -35,7 +37,7 @@ class Flow:
     self.avg_bandwidth = (self.avg_bandwidth + bandwidth)/2
     self.lastest_pdp_timestamp = lastest_pdp_timestamp
 
-    print(self)
+    #print(self)
 
     self.check_elephant()
 
@@ -91,6 +93,7 @@ def handle_pkt(pkt, tel_file):
         print(f"{count}, {data_layers[0].hop_cnt}, {data_layers[0].telemetry_data_sz}\n")
         tel_file.write(f"{count}, {data_layers[0].hop_cnt}, {data_layers[0].telemetry_data_sz}\n")
         for sw in data_layers[1:]:
+            print(sw.sw_id)
             tel_capture_period = (sw.curr_timestamp - sw.prev_timestamp)/MICROSEG
 
             utilization = (8.0*sw.amt_bytes/(tel_capture_period)) # bits/seconds
@@ -99,13 +102,10 @@ def handle_pkt(pkt, tel_file):
 
             if (sw.sw_id, sw.flow_id) in flows:
                 if (tel_capture_period > FLOW_TIMEOUT):
-                    print("hey")
                     flows[(sw.sw_id, sw.flow_id)].same_id_but_different_flow(utilization, sw.prev_timestamp, sw.curr_timestamp) 
                 else:
-                    print("opaaaaaaaaaaaa")
                     flows[(sw.sw_id, sw.flow_id)].update_same_flow(utilization, sw.curr_timestamp)
             else:
-                print("init")
                 flows[(sw.sw_id, sw.flow_id)] = Flow(sw.flow_id, utilization, sw.prev_timestamp, sw.curr_timestamp)
                 
         count+=1
@@ -139,7 +139,7 @@ def main(tel_output_file, timeout):
 
     for flow in list(flows.items()):
         if flow[1].elephant is True:
-            print(e.flow_id)
+            print(flow[1].flow_id)
 
     tel_file.close()
 
