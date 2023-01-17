@@ -90,7 +90,7 @@ def main(args):
 
 def parse_args():
     parser = argparse.ArgumentParser(description=f"Send packets to a certain ip and port")
-    parser.add_argument("-i", "--input_file", help="iNput file containing information about each flow", required=True, type=str)
+    parser.add_argument("-i", "--input_file", help="Input file containing information about each flow", required=True, type=str)
   
 
     return vars(parser.parse_args())

@@ -21,7 +21,7 @@ class Flow:
     self.lastest_pdp_timestamp = lastest_pdp_timestamp
 
     self.elephant = False
-    self.elephant_classification_timestamp = 0
+    self.elephant_classification_timestamp = []
 
     #self.switch_data = {}
 
@@ -53,12 +53,15 @@ class Flow:
 
 
   def check_elephant(self):
-    if(self.elephant is not True and self.avg_bandwidth > ELEPHANT_FLOW_BANDWIDTH_THRESHOLD and 
-        self.lastest_pdp_timestamp - self.first_pdp_timestamp > ELPHANT_FLOW_TIME_THRESHOLD*MICROSEG):
+    if(self.elephant is not True and self.avg_bandwidth >= ELEPHANT_FLOW_BANDWIDTH_THRESHOLD and 
+        self.lastest_pdp_timestamp - self.first_pdp_timestamp >= ELPHANT_FLOW_TIME_THRESHOLD*MICROSEG):
             self.elephant = True
-            self.elephant_classification_timestamp = self.lastest_pdp_timestamp
-            print("New elephant flow identified: ")
-            print(self)
+            elephant_classification_timestamp.append((self.lastest_pdp_timestamp, self.lastest_pdp_timestamp))
+            # print("New elephant flow identified: ")
+            # print(self)
+    elif(self.elephant is True and self.avg_bandwidth < ELEPHANT_FLOW_BANDWIDTH_THRESHOLD):
+        elephant = True
+        elephant_classification_timestamp[]
         
 
 
@@ -93,7 +96,6 @@ def handle_pkt(pkt, tel_file):
         print(f"{count}, {data_layers[0].hop_cnt}, {data_layers[0].telemetry_data_sz}\n")
         tel_file.write(f"{count}, {data_layers[0].hop_cnt}, {data_layers[0].telemetry_data_sz}\n")
         for sw in data_layers[1:]:
-            print(sw.sw_id)
             tel_capture_period = (sw.curr_timestamp - sw.prev_timestamp)/MICROSEG
 
             utilization = (8.0*sw.amt_bytes/(tel_capture_period)) # bits/seconds
@@ -119,16 +121,18 @@ def parse_args():
     parser = argparse.ArgumentParser(description=f"Receive packets and save them to a file")
     parser.add_argument("-o", "--tel_output_file", help="Telemetry output file", required=True, type=str)
     parser.add_argument("-t", "--timeout", help="Sniff capture time", required=True, type=float)
+    parser.add_argument("-e", "--elephant_flows_file", help="Elephant flows identification output file", required=True, type=str)
+
 
   
     return vars(parser.parse_args())
 
 
-def main(tel_output_file, timeout):
+def main(tel_output_file, timeout, elephant_flows_file):
     print("Starting receiver")
     iface = 'eth0'
 
-    tel_file = open(tel_output_file, "w")
+    tel_file = open(tel_output_file, 'w')
 
     try:
         sniff(iface = iface,
@@ -136,13 +140,16 @@ def main(tel_output_file, timeout):
     except Exception as e:
         print(f"Error in sniff: {e}\n")
 
+    tel_file.close()
+
+
+    elephant_fl_file = open(elephant_flows_file, 'w')
 
     for flow in list(flows.items()):
         if flow[1].elephant is True:
-            print(flow[1].flow_id)
+            elephant_fl_file.write(str(flow[1]))
 
-    tel_file.close()
 
 if __name__ == '__main__':
     args = parse_args()
-    main(args['tel_output_file'],  args['timeout'])
+    main(args['tel_output_file'],  args['timeout'], args['elephant_flows_file'])
