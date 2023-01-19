@@ -134,11 +134,15 @@ control MyIngress(inout headers hdr,
 
 void insert_telemetry(inout headers hdr, inout metadata meta, in bit<32> pres_amt_bytes){
         if(!hdr.telemetry.isValid()){
+            hdr.ethernet.ether_type = TYPE_TELEMETRY;
+
+            
             hdr.telemetry.setValid();
             hdr.telemetry.hop_cnt = 0;
-            hdr.ethernet.ether_type = TYPE_TELEMETRY;
             hdr.telemetry.next_header_type = TYPE_IPV4;
             hdr.telemetry.telemetry_data_sz = TEL_DATA_SZ;
+            hdr.telemetry.flow_id = meta.flow_id;
+
         }
 
         if(hdr.telemetry.hop_cnt < MAX_HOPS){
@@ -154,7 +158,6 @@ void insert_telemetry(inout headers hdr, inout metadata meta, in bit<32> pres_am
                 hdr.tel_data[0].bos = 0;
 
             hdr.tel_data[0].sw_id = meta.sw_id;
-            hdr.tel_data[0].flow_id = meta.flow_id;
             if(hdr.telemetry.hop_cnt>1)
                 hdr.tel_data[0].amt_bytes = pres_amt_bytes - (bit<32>)(hdr.telemetry.hop_cnt-1)*(TEL_DATA_SZ) - TEL_H_SZ;
             else

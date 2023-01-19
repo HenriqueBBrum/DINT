@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 
 import argparse
+import csv
+
 from datetime import datetime
 
 from telemetry_headers import *
 
 
 FLOW_TIMEOUT = 10 # In seconds
-ELEPHANT_FLOW_BANDWIDTH_THRESHOLD = 10 # In bits/second
-ELPHANT_FLOW_TIME_THRESHOLD = 5 #In seconds
+ELEPHANT_FLOW_BANDWIDTH_THRESHOLD = 100000 # In bits/second
+ELPHANT_FLOW_TIME_THRESHOLD = 8 #In seconds
 
 MICROSEG = 1000000
 
@@ -20,13 +22,14 @@ class Flow:
     self.first_pdp_timestamp = first_pdp_timestamp
     self.lastest_pdp_timestamp = lastest_pdp_timestamp
 
-    self.elephant = False
+    self.is_elephant_now = False
+    self.was_elephant = False
     self.elephant_classification_timestamp = []
+
 
     #self.switch_data = {}
 
     self.check_elephant()
-
 
 
   def __str__(self):
@@ -53,15 +56,18 @@ class Flow:
 
 
   def check_elephant(self):
-    if(self.elephant is not True and self.avg_bandwidth >= ELEPHANT_FLOW_BANDWIDTH_THRESHOLD and 
+    if(self.is_elephant_now is False and self.avg_bandwidth >= ELEPHANT_FLOW_BANDWIDTH_THRESHOLD and 
         self.lastest_pdp_timestamp - self.first_pdp_timestamp >= ELPHANT_FLOW_TIME_THRESHOLD*MICROSEG):
-            self.elephant = True
-            elephant_classification_timestamp.append((self.lastest_pdp_timestamp, self.lastest_pdp_timestamp))
-            # print("New elephant flow identified: ")
-            # print(self)
-    elif(self.elephant is True and self.avg_bandwidth < ELEPHANT_FLOW_BANDWIDTH_THRESHOLD):
-        elephant = True
-        elephant_classification_timestamp[]
+            print((self.lastest_pdp_timestamp - self.first_pdp_timestamp)/MICROSEG)
+            print("hey")
+
+            self.is_elephant_now = True
+            self.was_elephant = True
+            self.elephant_classification_timestamp.append((self.first_pdp_timestamp, self.lastest_pdp_timestamp))
+    elif(self.is_elephant_now is True and self.avg_bandwidth < ELEPHANT_FLOW_BANDWIDTH_THRESHOLD):
+        print("hey")
+        self.is_elephant_now = False
+        self.elephant_classification_timestamp[-1][1] = self.lastest_pdp_timestamp
         
 
 
@@ -84,31 +90,30 @@ def expand(x):
         yield x
 
 count = 0
-
-
 flows ={}
 
 def handle_pkt(pkt, tel_file):
     global count
     if Telemetry in pkt:
         data_layers = [l for l in expand(pkt) if(l.name=='Telemetry_Data' or l.name=='Telemetry')]
+        flow_id = data_layers[0].flow_id
 
-        print(f"{count}, {data_layers[0].hop_cnt}, {data_layers[0].telemetry_data_sz}\n")
-        tel_file.write(f"{count}, {data_layers[0].hop_cnt}, {data_layers[0].telemetry_data_sz}\n")
+        #print(f"{count}, {data_layers[0].hop_cnt}, {data_layers[0].telemetry_data_sz}\n")
+        tel_file.write(f"{count}, {flow_id}, {data_layers[0].hop_cnt}, {data_layers[0].telemetry_data_sz}\n")
         for sw in data_layers[1:]:
             tel_capture_period = (sw.curr_timestamp - sw.prev_timestamp)/MICROSEG
 
             utilization = (8.0*sw.amt_bytes/(tel_capture_period)) # bits/seconds
-            tel_file.write(f"{sw.sw_id}, {sw.amt_bytes}, {sw.prev_timestamp}, {sw.curr_timestamp}\n")
+            tel_file.write(f"{sw.sw_id},  {sw.amt_bytes}, {sw.prev_timestamp}, {sw.curr_timestamp}\n")
 
 
-            if (sw.sw_id, sw.flow_id) in flows:
+            if (sw.sw_id, flow_id) in flows:
                 if (tel_capture_period > FLOW_TIMEOUT):
-                    flows[(sw.sw_id, sw.flow_id)].same_id_but_different_flow(utilization, sw.prev_timestamp, sw.curr_timestamp) 
+                    flows[(sw.sw_id, flow_id)].same_id_but_different_flow(utilization, sw.prev_timestamp, sw.curr_timestamp) 
                 else:
-                    flows[(sw.sw_id, sw.flow_id)].update_same_flow(utilization, sw.curr_timestamp)
+                    flows[(sw.sw_id, flow_id)].update_same_flow(utilization, sw.curr_timestamp)
             else:
-                flows[(sw.sw_id, sw.flow_id)] = Flow(sw.flow_id, utilization, sw.prev_timestamp, sw.curr_timestamp)
+                flows[(sw.sw_id, flow_id)] = Flow(flow_id, utilization, sw.prev_timestamp, sw.curr_timestamp)
                 
         count+=1
 
@@ -124,7 +129,6 @@ def parse_args():
     parser.add_argument("-e", "--elephant_flows_file", help="Elephant flows identification output file", required=True, type=str)
 
 
-  
     return vars(parser.parse_args())
 
 
@@ -143,11 +147,18 @@ def main(tel_output_file, timeout, elephant_flows_file):
     tel_file.close()
 
 
-    elephant_fl_file = open(elephant_flows_file, 'w')
 
-    for flow in list(flows.items()):
-        if flow[1].elephant is True:
-            elephant_fl_file.write(str(flow[1]))
+    with open(elephant_flows_file, 'w') as csv_output_file:
+        csv_writer=csv.writer(csv_output_file)
+        csv_writer.writerow(['flow', 'bandwidth', 'elephant_classification_timestamp'])
+        saved_flows = set()
+        for flow in list(flows.items()):
+            if flow[1].was_elephant is True and flow[0][1] not in saved_flows:
+                saved_flows.add(flow[0][1])
+                csv_writer.writerow([flow[0], flow[1].avg_bandwidth, str(flow[1].elephant_classification_timestamp)])
+
+
+
 
 
 if __name__ == '__main__':

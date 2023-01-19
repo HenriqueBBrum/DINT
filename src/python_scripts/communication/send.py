@@ -34,7 +34,7 @@ def read_input_file(filename):
 
             # Finds the first occurence of a alphabetic char and returns the substring from that pos to the end of the string
             first_alpha = items[1].find(next((filter(str.isalpha, items[1])), str(None)))
-            if first_alpha is -1:
+            if first_alpha == -1:
                 mag = 1
                 first_alpha = len(items[1])
             else:
@@ -51,7 +51,6 @@ def read_input_file(filename):
 
 def send_packets(pkt, pps, amt_packets, wait_time):
     print(f"Running thread with config: (pps={pps}), (amt_packets={amt_packets})")
-    pkt.show2()
     time.sleep(wait_time)
 
     sendpfast(pkt, pps=pps, loop=amt_packets)
@@ -60,8 +59,6 @@ def send_packets(pkt, pps, amt_packets, wait_time):
 
 def main(args):
     configuration = read_input_file(args['input_file']) 
-
-
     ordered_configuration = sorted(configuration,  key=lambda x: x['wait_time'], reverse=True)
 
     print(ordered_configuration)

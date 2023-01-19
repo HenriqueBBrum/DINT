@@ -10,14 +10,14 @@ class Telemetry(Packet):
    name = "Telemetry"
    fields_desc = [ ByteField("hop_cnt", 0),
                      ByteField("telemetry_data_sz", 0),
-                     BitField("next_header_type", 0, 16)]
+                     BitField("next_header_type", 0, 16),
+                     IntField("flow_id", 0)]
                      
 # Telemetry header added to a packet by each switch
 class Telemetry_Data(Packet):
    name = "Telemetry_Data"
    fields_desc = [ BitField("bos", 0, 1),
                    BitField("sw_id", 0, 7),
-                   IntField("flow_id", 0),
                    IntField("amt_bytes", 0),
                    BitField("prev_timestamp", 0, 48),
                    BitField("curr_timestamp", 0, 48)]

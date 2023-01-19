@@ -30,10 +30,10 @@ for ((i = 1; i <= "$loops"; i++ )); do
 	folder="$final_output_folder""$name"
 	echo $folder
 
-	if [ "$i" -eq "$loops" ] 
-	then
-		python3 $testing_scripts_folder/comparison_plots.py -i $scripts_input_dir/graphs_input/ -g $scripts_input_dir/graphs_output/ -e $evaluation_file
-	fi
+	# if [ "$i" -eq "$loops" ] 
+	# then
+	# 	python3 $testing_scripts_folder/comparison_plots.py -i $scripts_input_dir/graphs_input/ -g $scripts_input_dir/graphs_output/ -e $evaluation_file
+	# fi
 
-	sh ./scripts/copy_and_remove.sh "$folder" 
+	#sh ./scripts/copy_and_remove.sh "$folder" 
 done
