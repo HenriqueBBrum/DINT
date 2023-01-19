@@ -5,7 +5,7 @@
 			"name":"h2", 
 			"cmds":["rm ../testing/results/pkts_output/sINT_real_output.pcapng",
 			 "touch ../testing/results/pkts_output/sINT_real_output.pcapng", "chmod o=rw ../testing/results/pkts_output/sINT_real_output.pcapng",
-				"tshark -i eth0 -w ../testing/results/pkts_output/sINT_real_output.pcapng  -f \"ip and udp and portrange 50000-60000 and not icmp\" -a duration:65 &"]
+				"tshark -i eth0 -w ../testing/results/pkts_output/sINT_real_output.pcapng -f \"port 50000 and not icmp\" -a duration:65 &"]
 		},
 		{
 			"name":"h5",

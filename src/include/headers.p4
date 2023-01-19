@@ -10,9 +10,9 @@
 #define MAX_PORTS 10
 #define MAX_HOPS 8 // Maximum number of hops of a telemetry packet
 
-#define L2_HEADERS_SZ 44 //  Ethernet (40) +  Telemetry (4) + IP Byte size
-#define TEL_H_SZ 4
-#define TEL_DATA_SZ 21 // Size (B) of each tel_data header
+#define L2_HEADERS_SZ 46 //  Ethernet (40) +  Telemetry (6) + IP Byte size
+#define TEL_H_SZ 6
+#define TEL_DATA_SZ 17 // Size (B) of each tel_data header
 #define UDP_LEN 8 // Size (B) of a UDP header
 
 
@@ -47,13 +47,13 @@ header telemetry_t{
     bit<8> hop_cnt;
     bit<8> telemetry_data_sz;
     bit<16> next_header_type;
+    bit<32> flow_id;
 }
 
 // Telemtry header with information about each flow and switch. Link usage is monitored
 header telemetry_data_t{
     bit<1> bos;
     bit<7> sw_id;
-    bit<32> flow_id;
 
     // monitoring values
     bit<32> amt_bytes;

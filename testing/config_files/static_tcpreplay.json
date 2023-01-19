@@ -1,26 +1,18 @@
 {
-	"time":65,
+	"time":20,
 	"devices":[
 		{
 			"name":"h2", 
 			"cmds":["touch ../testing/results/pkts_output/static_real_output.pcapng", "chmod o=rw ../testing/results/pkts_output/static_real_output.pcapng", 
-					"tshark -i eth0 -w ../testing/results/pkts_output/static_real_output.pcapng -f \"ip and udp and port 50000 and not icmp\" -a duration:65 &"]
+					"tshark -i eth0 -w ../testing/results/pkts_output/static_real_output.pcapng -f \"ip and udp and portrange 50000-60000 and not icmp\" -a duration:20 &"]
 		},
 		{
 			"name":"h5",
-			"cmds":["./python_scripts/communication/receive.py -o ../testing/results/pkts_output/static_telemetry_pkts.txt -t 65 &"]
+			"cmds":["cd  ../testing/results/pkts_output", "./../../../src/python_scripts/communication/receive.py -o static_telemetry_pkts.txt -t 20 -e static_elephant_flows.csv  &"]
 		},
 		{
 			"name":"h1",
-			"cmds":["sleep 1", "tcpreplay -i eth0 -K ../testing/evaluation_traffic/sINT_real_output_h1_mod.pcapng &"]
-		},
-		{
-			"name":"h3",
-			"cmds":["sleep 12", "tcpreplay -i eth0 -K ../testing/evaluation_traffic/sINT_real_output_h3.pcapng &"]
-		},
-		{
-			"name":"h4",
-			"cmds":["sleep 2", "tcpreplay -i eth0 -K ../testing/evaluation_traffic/sINT_real_output_h4.pcapng &"]
+			"cmds":["sleep 1", "./python_scripts/communication/send.py -i ../testing/evaluation_traffic/example.txt  &"]
 		}
 	]
 
