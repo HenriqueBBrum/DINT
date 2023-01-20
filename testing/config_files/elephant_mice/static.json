@@ -1,0 +1,27 @@
+{
+	"time":105,
+	"devices":[
+		{
+			"name":"h4", 
+			"cmds":["touch ../testing/results/pkts_output/static_real_output.pcapng", "chmod o=rw ../testing/results/pkts_output/static_real_output.pcapng", 
+					"tshark -i eth0 -w ../testing/results/pkts_output/static_real_output.pcapng -f \"ip and udp and portrange 50000-60000 and not icmp\" -a duration:105 &"]
+		},
+		{
+			"name":"h5",
+			"cmds":["cd  ../testing/results/pkts_output", "./../../../src/python_scripts/communication/receive.py -o static_telemetry_pkts.txt -t 105 -e static_elephant_flows.csv  &"]
+		},
+		{
+			"name":"h1",
+			"cmds":["wireshark &", "./python_scripts/communication/send.py -i ../testing/eval_traffic_generator/elephant_mice/h1_elephant_mice_traffic.txt  &"]
+		},
+		{
+			"name":"h2",
+			"cmds":["./python_scripts/communication/send.py -i ../testing/eval_traffic_generator/elephant_mice/h2_elephant_mice_traffic.txt  &"]
+		},
+		{
+			"name":"h3",
+			"cmds":["./python_scripts/communication/send.py -i ../testing/eval_traffic_generator/elephant_mice/h3_elephant_mice_traffic.txt &"]
+		}
+	]
+
+}

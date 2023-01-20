@@ -9,7 +9,7 @@ echo "Min push time: $1"
 
 
 testing_scripts_folder=~/Documents/DINT/testing/plotting_scripts
-config_files_folder=~/Documents/DINT/testing/config_files
+config_files_folder=~/Documents/DINT/testing/config_files/elephant_mice
 scripts_input_dir=$2
 
 cd ../src
@@ -20,7 +20,7 @@ cd ../src
 for i in static; do
 	make clean
 	p4_src="main_""$i"".p4"
-	config_file="$i""_tcpreplay.json"
+	config_file="$i"".json"
 	make P4_SRC=$p4_src TEST_JSON=$config_files_folder/$config_file
 done
 
