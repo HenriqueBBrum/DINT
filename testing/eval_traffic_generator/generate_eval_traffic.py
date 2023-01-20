@@ -15,25 +15,35 @@ def main(args):
 			if count>=amt_hosts:
 				break
 
-			items = line.split(' ')
-			amt_flows = int(items[0])
-			if(items[1] == 'SD'):
-				bandwidth = random.normal(float(items[2]), float(items[3]), amt_flows)
 
-			if(items[4] == 'SD'):
-				duration = random.normal(float(items[5]), float(items[6]), amt_flows)
+			output_file = f"{args['output_folder']}/h{count+1}_{evaluation_type}_traffic.txt"
+			output_file = open(output_file, 'w')
 
-			wait_time = random.randint(low=1, high=(total_time - (2*float(items[5]) + float(items[6]))), size=amt_flows)
+			for column in line.split(','):
 
-			flows = []
-			for i in range(amt_flows):
-				flows.append(f"{dest_ip} {bandwidth[i]:.4f}M {duration[i]:.4f} {wait_time[i]}\n")
+				items = column.split(' ')
+				print(items)
+				amt_flows = int(items[0])
+				if(items[1] == 'SD'):
+					bandwidth = random.normal(float(items[2]), float(items[3]), amt_flows)
 
-			output_file = f'h{count+1}_{evaluation_type}_traffic.txt'
-			with open(output_file, 'w') as output:
+				if(items[4] == 'SD'):
+					duration = random.normal(float(items[5]), float(items[6]), amt_flows)
+
+				highest_wait_time = total_time - (2*float(items[5]) + float(items[6]))
+				if(highest_wait_time>1):
+					wait_time = random.randint(low=1, high=highest_wait_time, size=amt_flows)
+				else:
+					wait_time = [0]*amt_flows
+
+				flows = []
+				for i in range(amt_flows):
+					flows.append(f"{dest_ip} {bandwidth[i]:.4f}M {duration[i]:.4f} {wait_time[i]}\n")
+
 				for flow in flows:
-					output.write(flow)
+					output_file.write(flow)
 
+			output_file.close()				
 
 			count+=1
 
@@ -44,6 +54,8 @@ def main(args):
 def parse_args():
 	parser = argparse.ArgumentParser(description=f"Send packets to a certain ip and port")
 	parser.add_argument("-c", "--configuration_file", help="Input file containing information about the desired configuration", required=True, type=str)
+	parser.add_argument("-o", "--output_folder", help="Output folder for the traffic files", required=True, type=str)
+
 
 	return vars(parser.parse_args())
 

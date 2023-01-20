@@ -121,7 +121,6 @@ def handle_pkt(pkt, tel_file):
 
 
 
-
 def parse_args():
     parser = argparse.ArgumentParser(description=f"Receive packets and save them to a file")
     parser.add_argument("-o", "--tel_output_file", help="Telemetry output file", required=True, type=str)

@@ -1,0 +1,27 @@
+{
+	"time":65,
+	"devices":[
+		{
+			"name":"h2", 
+			"cmds":["touch ../testing/results/pkts_output/DINT_real_output.pcapng", "chmod o=rw ../testing/results/pkts_output/DINT_real_output.pcapng", 
+					"tshark -i eth0 -w ../testing/results/pkts_output/DINT_real_output.pcapng -f \"ip and udp and port 50000 and not icmp\" -a duration:65 &"]
+		},
+		{
+			"name":"h5",
+			"cmds":["./python_scripts/communication/receive.py -o ../testing/results/pkts_output/DINT_telemetry_pkts.txt -t 65 &"]
+		},
+		{
+			"name":"h1",
+			"cmds":["sleep 1", "tcpreplay -i eth0 -K ../testing/evaluation_traffic/sINT_real_output_h1_mod.pcapng &"]
+		},
+		{
+			"name":"h3",
+			"cmds":["sleep 12", "tcpreplay -i eth0 -K ../testing/evaluation_traffic/sINT_real_output_h3.pcapng &"]
+		},
+		{
+			"name":"h4",
+			"cmds":["sleep 2", "tcpreplay -i eth0 -K ../testing/evaluation_traffic/sINT_real_output_h4.pcapng &"]
+		}
+	]
+
+}

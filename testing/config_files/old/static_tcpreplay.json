@@ -1,0 +1,19 @@
+{
+	"time":20,
+	"devices":[
+		{
+			"name":"h2", 
+			"cmds":["touch ../testing/results/pkts_output/static_real_output.pcapng", "chmod o=rw ../testing/results/pkts_output/static_real_output.pcapng", 
+					"tshark -i eth0 -w ../testing/results/pkts_output/static_real_output.pcapng -f \"ip and udp and portrange 50000-60000 and not icmp\" -a duration:20 &"]
+		},
+		{
+			"name":"h5",
+			"cmds":["cd  ../testing/results/pkts_output", "./../../../src/python_scripts/communication/receive.py -o static_telemetry_pkts.txt -t 20 -e static_elephant_flows.csv  &"]
+		},
+		{
+			"name":"h1",
+			"cmds":["sleep 1", "./python_scripts/communication/send.py -i ../testing/evaluation_traffic/example.txt  &"]
+		}
+	]
+
+}
