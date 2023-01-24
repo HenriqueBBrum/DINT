@@ -1,2 +1,0 @@
-sw_type,sw_id,min_telemetry_push_time,experiment_time,packet_count,rmse,telemetry_byte_count,telemetry_percentage
-static,2,1.0,60.0,2,0.5250948392090083,0,0.0
