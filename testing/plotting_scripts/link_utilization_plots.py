@@ -8,15 +8,19 @@ import matplotlib.pyplot as plt
 from math import sqrt, fabs, ceil
 import csv
 import argparse
-import os
+import os, sys
 import numpy as np
 import pandas as pd
 import glob
 
-metric_unit = {'b': 1, 'k':1000, 'm':1000000, 'g':1000000000}
+
+sys.path.append("../constants")
+print(sys.path)
+
+import constants
+
 
 ms = 1000
-microseg = 1000000
 telemetry_data_sz = 21
 telelemetry_header_sz = 4
 
@@ -25,16 +29,11 @@ telelemetry_header_sz = 4
 def parse_args():
 
     parser = argparse.ArgumentParser(description=f"Send packets to a certain ip and port")
-    parser.add_argument('-i', '--input_file_folder', type=str, help="Folder with input files")
-    parser.add_argument('-g', '--graphs_output_folder', type=str, help="Folder for output graph files")
-    parser.add_argument('-r', '--rmse_output_folder', type=str, help="Folder for output rmse and byte overhead files")
     parser.add_argument('-d', '--experiment_duration', type=float, help="Duration of the experiment'")
     parser.add_argument('-m', '--min_telemetry_push_time', type=float, help="Minimum polling time in seconds used in the 'p4' files")
     parser.add_argument('-s', '--switch_id', type=str, help="Switch id to be compared")
-    parser.add_argument('-t', '--traffic_shape', type=str, help = "RMSE traffic shape name", required=False, default="no_type")
+    parser.add_argument('-e', '--experiment', type=str, help = "The type of experiment (elephant or microburst)", required=True)
     parser.add_argument('-u', '--unit', type=str, help = "Metric Unit (k, m, g)", required=False, default="k")
-
-
 
     return vars(parser.parse_args())
 
@@ -60,12 +59,12 @@ def real_traffic_data(filepath, min_push_time,  unit, experiment_duration):
             if(float(row['frame.time_relative']) - current_time <= min_push_time):
                 grouped_amt_bytes+=int(row['frame.len'])
             else:
-                xy[current_time+min_push_time] = grouped_amt_bytes/(metric_unit[unit]*min_push_time)
+                xy[current_time+min_push_time] = grouped_amt_bytes/(constants.METRIC_UNIT[unit]*min_push_time)
               
                 current_time = current_time + min_push_time
                 grouped_amt_bytes=int(row['frame.len'])
 
-        xy[current_time+min_push_time] = grouped_amt_bytes/(metric_unit[unit]*min_push_time)
+        xy[current_time+min_push_time] = grouped_amt_bytes/(constants.METRIC_UNIT[unit]*min_push_time)
     
     return list(xy.keys()), list(xy.values()), total_traffic
 
@@ -92,14 +91,14 @@ def read_telemetry_file(telemetry_file, switch_id, unit, experiment_duration):
                     telemetry_byte_count=telemetry_byte_count+(telelemetry_header_sz+telemetry_data_sz*hop_cnt)
             else:
                 if(cols[0]==switch_id):
-                    time_window_s = (int(cols[-1],10)-int(cols[-2],10))/(microseg)
+                    time_window_s = (int(cols[-1],10)-int(cols[-2],10))/(constants.MICROSEG)
                     time_window_s = 1 if time_window_s == 0 else time_window_s
 
                     if(prev_time+time_window_s) > experiment_duration:
                         return x, y, total_telemetry, telemetry_byte_count
 
                     x.append(float("{:.6f}".format(prev_time+time_window_s)))
-                    y.append((float(cols[1])/time_window_s)/metric_unit[unit])
+                    y.append((float(cols[1])/time_window_s)/constants.METRIC_UNIT[unit])
                     
 
                     prev_time+=time_window_s
@@ -147,16 +146,13 @@ def plot_line_graph(args, sw_type, real_x, real_y, telemetry_y):
     #plt.yticks(np.arange(0,4.5,0.5))
 
     plt.gca().legend()
-    plot1.savefig(args['graphs_output_folder']+args['traffic_shape']+'_Real_X_Telemetry_'+sw_type+'_sw'+args['switch_id']+'.png')
+    plot1.savefig(constants.GRAPHS_OUTPUT_FOLDER+args['experiment']+'_Real_X_Telemetry_'+sw_type+'_sw'+args['switch_id']+'.png')
     plot1.clf() 
-
-
-
 
 
 # Saves to a specific file rmse(%) and byte count(Bytes) information
 def save_rmse_and_telemetry_byte_count(args, sw_type, telemetry_pkts_count, rmse, telemetry_byte_count, telemetry_percentage):
-    filepath = args['rmse_output_folder']+args['traffic_shape']+".csv"
+    filepath = constants.RMSE_OVERHEAD_FOLDER+args['experiment']+".csv"
     file_exists = os.path.isfile(filepath)
 
     with open(filepath, "a") as csvfile:
@@ -173,29 +169,25 @@ def save_rmse_and_telemetry_byte_count(args, sw_type, telemetry_pkts_count, rmse
 
 
 
-def main():
-    args = parse_args()
+def main(args):
 
     # Transforms all pcapng files (real traffic) to csv files with the folowing headers: frame.number, frame.time_epoch, frame.time_relative, frame.len
-    pcapng_files = glob.glob(args['input_file_folder']+"*.pcapng")
+    pcapng_files = glob.glob(constants.PKTS_DATA_FOLDER+"*.pcapng")
     for f in pcapng_files:
         paths = f.split("/")
         filename = paths[-1].split(".")[0]
-        filepath = "/".join(f.split("/")[0:-1])+"/"+filename+".csv"
-       
+        filepath = "/".join(paths[:-1])+"/"+filename+".csv"
+
         os.system("tshark -r "+f+" -T fields -e frame.number -e frame.time_epoch -e frame.time_relative -e frame.len -e ip.src -e ip.dst -E header=y -E separator=, > "+filepath)
 
-   
-    telemetry_files = glob.glob(args['input_file_folder']+"*.txt")
-    rmse_dict = {}
 
+    telemetry_files = glob.glob(constants.PKTS_DATA_FOLDER+"*_telemetry_pkts.txt")
     for f in telemetry_files:
         sw_type = f.split("/")[-1].split(".")[0].split("_")[0]
-        print(sw_type)
 
         telemetry_x, telemetry_y, total_telemetry, telemetry_byte_count = read_telemetry_file(f, args['switch_id'], args['unit'], args['experiment_duration'])
 
-        real_traffic_file = glob.glob(args['input_file_folder']+sw_type+"_real*.csv")[0]
+        real_traffic_file = glob.glob(constants.PKTS_DATA_FOLDER+sw_type+"_real_output.csv")[0]
         real_x, real_y, total_traffic = real_traffic_data(real_traffic_file, args['min_telemetry_push_time'], args['unit'], args['experiment_duration'])
         
 
@@ -217,8 +209,7 @@ def main():
         save_rmse_and_telemetry_byte_count(args, sw_type, len(telemetry_x), rmse, telemetry_byte_count, total_telemetry/total_traffic)
        
 
-
-
   
 if __name__ == '__main__':
-    main()
+    args = parse_args()
+    main(args)
