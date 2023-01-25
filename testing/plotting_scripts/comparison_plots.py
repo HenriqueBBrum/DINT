@@ -7,6 +7,15 @@ from collections import OrderedDict
 import glob
 
 
+import sys
+
+
+sys.path.append("../python_constants")
+print(sys.path)
+
+import constants
+
+
 # To plot comparison rmse/telemetry graphs used reverse=True in line 208 and reverse=False for parameters eval
 
 

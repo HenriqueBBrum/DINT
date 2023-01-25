@@ -14,7 +14,7 @@ import pandas as pd
 import glob
 
 
-sys.path.append("../constants")
+sys.path.append("../python_constants")
 print(sys.path)
 
 import constants
