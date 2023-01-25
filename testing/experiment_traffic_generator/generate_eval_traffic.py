@@ -30,7 +30,7 @@ def main(args):
 				if(items[4] == 'SD'):
 					duration = random.normal(float(items[5]), float(items[6]), amt_flows)
 
-				highest_wait_time = total_time - (2*float(items[5]) + float(items[6]))
+				highest_wait_time = total_time - (float(items[5]) + float(items[6]))
 				if(highest_wait_time>1):
 					wait_time = random.randint(low=1, high=highest_wait_time, size=amt_flows)
 				else:

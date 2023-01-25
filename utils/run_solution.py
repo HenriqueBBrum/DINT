@@ -381,7 +381,7 @@ class P4_Simulation:
             # First two device are receivers while the rest are clientes. Wait receivers to configure before sending
             ct = ct + 1
             if(ct == 2):
-                sleep(0.5)
+                sleep(0.25)
 
         sleep(self.test['time'])
         

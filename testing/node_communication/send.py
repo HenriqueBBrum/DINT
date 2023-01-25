@@ -9,9 +9,11 @@ import os, sys
 import json
 import threading
 
-PKT_SIZE_WITH_HEADER = 1400 #Bytes
-HEADER_SIZE = 28
+sys.path.append("../python_utils")
+import constants
 
+PKT_SIZE_WITH_HEADER = 1400 #Bytes
+HEADER_SIZE = 42
 
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -19,11 +21,43 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from telemetry_headers import *
 
 
-magnitude = {'B':1, 'K':1000, 'M':1000000, 'G': 1000000000}
-items_name = ['dst_ip', 'bandwidth', 'execution_time', 'wait_time']
+def parse_args():
+    parser = argparse.ArgumentParser(description=f"Send packets to a certain ip and port")
+    parser.add_argument("-i", "--input_file", help="Input file containing information about each flow", required=True, type=str)
+  
+    return vars(parser.parse_args())
 
 
-# ip_addr, bandwidth (Xb/s), execution time (s), wait time (s)
+
+def main(args):
+    configuration = read_input_file(args['input_file']) 
+    ordered_configuration = sorted(configuration,  key=lambda x: x['wait_time'], reverse=True)
+
+    print(ordered_configuration)
+
+    udp_port = 50000
+    for config in configuration:
+
+        #print(*config.items())
+        pps = config['throughput']/(8*PKT_SIZE_WITH_HEADER)
+        amt_packets = pps*float(config['execution_time'])
+
+        #print(pps)
+        #print(amt_packets)
+
+        pkt = Ether(dst='ff:ff:ff:ff:ff:ff', src=get_if_hwaddr('eth0')) / \
+                IP(dst=config['dst_ip'])/UDP(sport=udp_port,dport=udp_port)/Raw(RandString(size=(PKT_SIZE_WITH_HEADER-HEADER_SIZE)))
+
+
+        t = Thread(target=send_packets, args=(pkt, pps, amt_packets, int(config['wait_time'])))
+        t.start()
+
+        udp_port=udp_port + 1
+
+
+items_name = ['dst_ip', 'throughput', 'execution_time', 'wait_time']
+
+# ip_addr, throughput (Xb/s), execution time (s), wait time (s)
 def read_input_file(filename):
     configuration = []
     with open(filename, 'r') as file:
@@ -38,15 +72,16 @@ def read_input_file(filename):
                 mag = 1
                 first_alpha = len(items[1])
             else:
-                mag = items[1][first_alpha:] 
+                mag = items[1][first_alpha:].lower()
 
-
-            final_band = float(items[1][:first_alpha])*magnitude.get(mag, 1)
+            final_band = float(items[1][:first_alpha])*constants.METRIC_UNIT.get(mag, 1)
             items[1] = final_band
 
             configuration.append(dict(zip(items_name, items)))
 
     return configuration
+
+
 
 
 def send_packets(pkt, pps, amt_packets, wait_time):
@@ -57,41 +92,8 @@ def send_packets(pkt, pps, amt_packets, wait_time):
 
 
 
-def main(args):
-    configuration = read_input_file(args['input_file']) 
-    ordered_configuration = sorted(configuration,  key=lambda x: x['wait_time'], reverse=True)
-
-    print(ordered_configuration)
-
-    udp_port = 50000
-    for config in configuration:
-
-        print(*config.items())
-        pps = config['bandwidth']/(8*PKT_SIZE_WITH_HEADER)
-        amt_packets = pps*float(config['execution_time'])
-
-        print(pps)
-        print(amt_packets)
-
-        pkt = Ether(dst='ff:ff:ff:ff:ff:ff', src=get_if_hwaddr('eth0')) / \
-                IP(dst=config['dst_ip'])/UDP(sport=udp_port,dport=udp_port)/Raw(RandString(size=(PKT_SIZE_WITH_HEADER-HEADER_SIZE)))
-
-
-        t = Thread(target=send_packets, args=(pkt, pps, amt_packets, int(config['wait_time'])))
-        t.start()
-
-        udp_port=udp_port + 1
-
-
-
-
-def parse_args():
-    parser = argparse.ArgumentParser(description=f"Send packets to a certain ip and port")
-    parser.add_argument("-i", "--input_file", help="Input file containing information about each flow", required=True, type=str)
-  
-
-    return vars(parser.parse_args())
 
 if __name__ == '__main__':
     args = parse_args()
     main(args)
+

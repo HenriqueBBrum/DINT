@@ -17,7 +17,7 @@ class Telemetry(Packet):
 class Telemetry_Data(Packet):
    name = "Telemetry_Data"
    fields_desc = [ BitField("bos", 0, 1),
-                   BitField("sw_id", 0, 7),
+                   BitField("switch_id", 0, 7),
                    IntField("amt_bytes", 0),
                    BitField("prev_timestamp", 0, 48),
                    BitField("curr_timestamp", 0, 48)]
