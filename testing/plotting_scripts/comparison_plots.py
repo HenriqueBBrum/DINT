@@ -31,7 +31,7 @@ plt.rc('font', **font)
 # Arguments that need to be informed for this program
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-e', '--experiment', type=str, help = "The type of experiment (elephant or microburst)", required=True)
+    parser.add_argument('-e', '--experiment_type', type=str, help = "The type of experiment (elephant or microburst)", required=True)
     parser.add_argument('-u', '--unit', type=str, help = "Metric Unit (b, k, m, g)", required=False, default="b")
 
     return vars(parser.parse_args())
@@ -130,7 +130,7 @@ def plot_bar_graph(filepath, title, ylabel, labels, rects, sw_type_count, label_
     
 
 # Plot all bar graphs (RMSE and telemetry overhead)
-def plot_graphs(data, experiment, sw_id, total_time, unit):
+def plot_graphs(data, experiment_type, sw_id, total_time, unit):
     output_folder = constants.GRAPHS_OUTPUT_FOLDER
 
     if len(data) <= 0:
@@ -142,12 +142,12 @@ def plot_graphs(data, experiment, sw_id, total_time, unit):
 
 
     overhead_graph_title = 'Telemetry Overhead S - '+'(SW'+sw_id+', '+total_time+'s)'
-    overhead_graph_filepath = output_folder+experiment+'_Tel_Overhead_'+sw_id+'_'+total_time.split('.')[0]+'s.png'
+    overhead_graph_filepath = output_folder+experiment_type+'_Tel_Overhead_'+sw_id+'_'+total_time.split('.')[0]+'s.png'
     plot_bar_graph(overhead_graph_filepath, overhead_graph_title, 'Total Overhead (KBytes)', *crete_bar_graph_rects(data, 2, 1/METRIC_UNIT['unit']), "1")
 
 
     # byte_cnt_title = 'Telemetry Overhead - '+'(SW'+sw_id+', '+total_time+'s)'
-    # byte_cnt_fp = output_folder+experiment+'_Tel_Overhead_'+sw_id+'_'+total_time.split('.')[0]+'s.png'
+    # byte_cnt_fp = output_folder+experiment_type+'_Tel_Overhead_'+sw_id+'_'+total_time.split('.')[0]+'s.png'
     # plot_bar_graph(byte_cnt_fp, byte_cnt_title, 'Overhead compared to Total traffic (%)', *crete_bar_graph_rects(data, 3, 100), "3")
 
 
@@ -214,13 +214,16 @@ def main():
     legend = ["static", "sINT", "LINT", "DINT"]
 
     for f in rmse_overhead_files:
-        experiment = (f.split("/")[-1].split(".")[0]).split("_")[0]
+        experiment_type = (f.split("/")[-1].split(".")[0]).split("_")[0]
+
+        print(experiment_type)
+        exit(0)
 
         final_dict = fix_rmse_overhead_data()
        
         for key, data in final_dict.items():
             sw_id, total_time = key.split('_')
-            plot_graphs(data , experiment, sw_id, total_time, args['unit'])
+            plot_graphs(data , experiment_type, sw_id, total_time, args['unit'])
 
 
     anomalous_traffic_files = glob.glob(constants.RMSE_OVERHEAD_FOLDER+"*.csv")

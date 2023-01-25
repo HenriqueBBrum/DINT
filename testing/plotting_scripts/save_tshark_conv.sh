@@ -1,8 +1,10 @@
 #!/bin/bash
 
-cd ../results/pkts_output
+traffic_data_folder=$1
 
-switch_type=$1
+cd $traffic_data_folder
+
+switch_type=$2
 
 input_file="$switch_type""_real_output.pcapng"
 output_csv="$switch_type""_real_flows.csv"

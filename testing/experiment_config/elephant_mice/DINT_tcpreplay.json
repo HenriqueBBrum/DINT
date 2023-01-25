@@ -1,0 +1,19 @@
+{
+	"time":25,
+	"devices":[
+		{
+			"name":"h4", 
+			"cmds":["cd ../testing/results/traffic_data/", "touch DINT_real_output.pcapng", "chmod o=rw DINT_real_output.pcapng", 
+					"tshark -i eth0 -w DINT_real_output.pcapng -f \"ip and udp and portrange 50000-60000 and not icmp\" -a duration:25 &"]
+		},
+		{
+			"name":"h5",
+			"cmds":["cd  ../testing/node_communication/", "./receive.py -s DINT -e elephant_mice -t 25 &"]
+		},
+		{
+			"name":"h1",
+			"cmds":["cd  ../testing/node_communication/", "./send.py -i ../experiment_traffic_generator/elephant_mice/h1_elephant_mice_traffic.txt &"]
+		}
+	]
+
+}
