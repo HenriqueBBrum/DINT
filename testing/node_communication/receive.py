@@ -11,12 +11,12 @@ from telemetry_headers import *
 
 
 
-sys.path.append("../../constants")
+sys.path.append("../python_constants")
 import constants
 
 
 class Flow:
-  def __init__(self, flow_id, bandwidth, first_pdp_timestamp, lastest_pdp_timestamp, anomaly):
+  def __init__(self, flow_id, bandwidth, first_pdp_timestamp, lastest_pdp_timestamp, experiment):
     self.flow_id = flow_id
     self.avg_bandwidth = bandwidth
     self.first_pdp_timestamp = first_pdp_timestamp
@@ -26,7 +26,7 @@ class Flow:
     self.was_anomalous = False
     self.anomalous_identification_timestamp = []
 
-    self.anomaly = anomaly
+    self.experiment = experiment
 
 
     self.check_anomalous()
@@ -57,7 +57,7 @@ class Flow:
 
     bandwidth_threshold=0
     duration_threshold=0
-    if(self.anomaly == "elephant"):
+    if(self.experiment == "elephant"):
         bandwidth_threshold=constants.ELEPHANT_FLOW_BANDWIDTH_THRESHOLD
         duration_threshold=constants.ELEPHANT_FLOW_TIME_THRESHOLD
     else:
@@ -100,12 +100,12 @@ def expand(x):
 count = 0
 flows ={}
 
-def handle_pkt(pkt, tel_file, anomaly):
+def handle_pkt(pkt, tel_file, experiment):
     global count
     if Telemetry in pkt:
         five_tuple = (pkt[IP].src, pkt[UDP].sport, pkt[IP].dst, pkt[UDP].dport, pkt[IP].proto)
 
-        pkt.show2()
+        #pkt.show2()
 
         data_layers = [l for l in expand(pkt) if(l.name=='Telemetry_Data' or l.name=='Telemetry')]
         flow_id = data_layers[0].flow_id
@@ -124,7 +124,7 @@ def handle_pkt(pkt, tel_file, anomaly):
                 else:
                     flows[five_tuple].update_same_flow(utilization, sw.curr_timestamp)
             else:
-                flows[five_tuple] = Flow(flow_id, utilization, sw.prev_timestamp, sw.curr_timestamp, anomaly)
+                flows[five_tuple] = Flow(flow_id, utilization, sw.prev_timestamp, sw.curr_timestamp, experiment)
                 
         count+=1
 
@@ -135,7 +135,7 @@ def handle_pkt(pkt, tel_file, anomaly):
 def parse_args():
     parser = argparse.ArgumentParser(description=f"Receive packets and save them to a file")
     parser.add_argument("-s", "--switch_type", help="Static, DINT, etc", required=True, type=str)
-    parser.add_argument('-a', '--anomaly', type=str, help = "The type of anomaly (elephant or microburst)", required=True)
+    parser.add_argument('-e', '--experiment', type=str, help = "The type of experiment (elephant or microburst)", required=True)
     parser.add_argument("-t", "--timeout", help="Sniff capture time", required=True, type=float)
 
 
@@ -152,13 +152,15 @@ def main(args):
 
     try:
         sniff(iface = iface,
-              prn = lambda x: handle_pkt(x, tel_file, args['anomaly']), timeout = args['timeout'])
+              prn = lambda x: handle_pkt(x, tel_file, args['experiment']), timeout = args['timeout'])
     except Exception as e:
         print(f"Error in sniff: {e}\n")
 
     tel_file.close()
 
-    anomalous_flows_output = constants.PKTS_DATA_FOLDER+args['switch_type']+"_"+args['anomaly']+"_flows.csv"
+
+
+    anomalous_flows_output = constants.PKTS_DATA_FOLDER+args['switch_type']+"_"+args['experiment']+"_flows.csv"
 
     with open(anomalous_flows_output, 'w') as csv_output_file:
         csv_writer=csv.writer(csv_output_file)
