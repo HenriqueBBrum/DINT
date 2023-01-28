@@ -2,6 +2,8 @@ import argparse
 from numpy import random
 
 
+# M/bits per seconds the throughput
+
 def main(args):
 	unique_flows = []
 	with open(args['configuration_file'], 'r') as config:
@@ -24,11 +26,16 @@ def main(args):
 				items = column.split(' ')
 				print(items)
 				amt_flows = int(items[0])
+
 				if(items[1] == 'SD'):
 					bandwidth = random.normal(float(items[2]), float(items[3]), amt_flows)
+				elif(items[1] == 'R'):
+					bandwidth = random.uniform(float(items[2]), float(items[3]), amt_flows)
 
 				if(items[4] == 'SD'):
 					duration = random.normal(float(items[5]), float(items[6]), amt_flows)
+				elif(items[1] == 'R'):
+					duration = random.uniform(float(items[5]), float(items[6]), amt_flows)
 
 				highest_wait_time = total_time - (float(items[5]) + float(items[6]))
 				if(highest_wait_time>1):

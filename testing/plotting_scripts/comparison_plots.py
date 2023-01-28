@@ -5,7 +5,7 @@ import argparse
 import numpy as np
 from collections import OrderedDict
 import glob
-import sys
+import sys, os
 import pandas as pd
 
 
@@ -30,6 +30,7 @@ def parse_args():
 
 
 color_dict={'static':'orange', 'DINT':'green', 'LINT':'red'}
+
 def main(args):
     args = parse_args()
 
@@ -44,25 +45,27 @@ def main(args):
 
 
     anomalous_flows_stats_file = constants.ANOMALOUS_FLOWS_DATA_FOLDER+args['experiment_type']+".csv"
-    accuracy, avg_bandwidth_nrmse, avg_delays = anomalous_flows_stats(anomalous_flows_stats_file)
+    performance, flow_bandwidth_nrmse, avg_delays = anomalous_flows_stats(anomalous_flows_stats_file)
 
-    print(accuracy)
-    print(avg_bandwidth_nrmse)
-    print(avg_delays)
-    # for first_key in accuracy.unique():
-    #     print(first_key)
-
-    #     accuracy.plot(kind='line', x='min_telemetry_push_time', y='accuracy')
-
-    #     #plt.show()
-    #     plt.savefig(constants.GRAPHS_FOLDER+experiment_type+'_ACC_'+switch_id+'_'+total_time.split('.')[0]+'s.png')
-
-    #     print(accuracy)
-    #     print(avg_bandwidth_nrmse)
-    #     print(avg_delays.to_string())
+    performance_csv_path =  constants.ANOMALOUS_FLOWS_DATA_FOLDER+args['experiment_type']+"_performance_results.csv"
+    performance.round(3).to_csv(performance_csv_path, mode='a',index=False, header=not os.path.exists(performance_csv_path))
 
 
+    print(flow_bandwidth_nrmse)
+    
+    nmrse_data = dict(zip(flow_bandwidth_nrmse['switch_type'],(zip(flow_bandwidth_nrmse['mean'], flow_bandwidth_nrmse['std'], 
+        flow_bandwidth_nrmse['min_telemetry_push_time']))))
 
+    ordered_y_tick_labels = sorted(flow_bandwidth_nrmse['min_telemetry_push_time'].unique().tolist())
+    flow_bandwidth_nrmse_fp = constants.ANOMALOUS_FLOWS_DATA_FOLDER+args['experiment_type']+"_avg_flow_bandwidth_nrmse_fp.png"
+    flow_bandwidth_nrmse_graph_title = 'Measurement Error - '+'(SW'+switch_id+', '+total_time+'s)'
+    print("---------------------")
+
+    final_flow_nrmse = {}
+    for key, value in nmrse_data.items():
+        final_flow_nrmse[key] = [value]
+
+    plot_bar_graph(flow_bandwidth_nrmse_fp, flow_bandwidth_nrmse_graph_title, 'NRMSE  (%)', ordered_y_tick_labels, final_flow_nrmse, len(nmrse_data.keys()), '4')
 
 
 def group_nrmse_and_overhead_data(nrmse_and_overhead_file):
@@ -119,7 +122,7 @@ def plot_nmrse_and_overhead_graphs(graph_bars_data, experiment_type, switch_id, 
     if len(graph_bars_data) <= 0:
         return
 
-    labels, switch_type_set = set(), set()
+    y_tick_labels, switch_type_set = set(), set()
     nmrse_data, tel_overhead_data = {}, {}
     for second_key, graph_bar_data in graph_bars_data.items():
         switch_type, push_time = second_key.split('_')
@@ -128,21 +131,23 @@ def plot_nmrse_and_overhead_graphs(graph_bars_data, experiment_type, switch_id, 
             nmrse_data[switch_type] = []
             tel_overhead_data[switch_type] = []
 
-        labels.add(float(push_time))
+        y_tick_labels.add(float(push_time))
         switch_type_set.add(switch_type)
 
         nmrse_data[switch_type].append(graph_bar_data['nrmse']+ (float(push_time), ))
         tel_overhead_data[switch_type].append(graph_bar_data['tel_overhead'] + (float(push_time), ))
 
-    ordered_labels = sorted(labels)
+    ordered_y_tick_labels = sorted(y_tick_labels)
     nrmse_graph_title = 'Measurement Error - '+'(SW'+switch_id+', '+total_time+'s)'
+    print(nmrse_data)
     nrmse_graph_filepath = output_folder+experiment_type+'_NRMSE_'+switch_id+'_'+total_time.split('.')[0]+'s.png'
-    plot_bar_graph(nrmse_graph_filepath, nrmse_graph_title, 'NRMSE  (%)', ordered_labels, nmrse_data, len(switch_type_set), '3')
+    plot_bar_graph(nrmse_graph_filepath, nrmse_graph_title, 'NRMSE  (%)', ordered_y_tick_labels, nmrse_data, len(switch_type_set), '3')
 
 
     overhead_graph_title = 'Telemetry Overhead S - '+'(SW'+switch_id+', '+total_time+'s)'
     overhead_graph_filepath = output_folder+experiment_type+'_Tel_Overhead_'+switch_id+'_'+total_time.split('.')[0]+'s.png'
-    plot_bar_graph(overhead_graph_filepath, overhead_graph_title, 'Total Overhead (KBytes)',  ordered_labels, tel_overhead_data, len(switch_type_set), '1')
+    overhead_graph_ylabel = 'Total Overhead ('+unit.upper()+'Bytes)'
+    plot_bar_graph(overhead_graph_filepath, overhead_graph_title, overhead_graph_ylabel, ordered_y_tick_labels, tel_overhead_data, len(switch_type_set), '1')
 
 
     # byte_cnt_title = 'Telemetry Overhead - '+'(SW'+switch_id+', '+total_time+'s)'
@@ -160,15 +165,21 @@ def anomalous_flows_stats(anomalous_flows_stats_file):
     common_colums = ['first_key', 'second_key', 'switch_type', 'min_telemetry_push_time']
     metrics = df.groupby(common_colums, as_index=False)[['throughput_nrmse', 'avg_delay']].agg([np.mean, np.std])
     perf_df =  df.groupby(common_colums, as_index=False)[['TP', 'FP', 'FN', 'TN']].mean()
-    perf_df['accuracy'] = (perf_df['TP'] + perf_df['TN'])/(perf_df['TP'] + perf_df['TN'] + perf_df['FP'] + perf_df['FN'])
-  
 
-    return perf_df[common_colums+ ['accuracy']], metrics['throughput_nrmse'].reset_index(), metrics['avg_delay'].reset_index()
+    final_perf_df = perf_df[common_colums].copy()
+    final_perf_df['accuracy'] = (perf_df['TP'] + perf_df['TN'])/(perf_df['TP'] + perf_df['TN'] + perf_df['FP'] + perf_df['FN'])
+    final_perf_df['precision'] = perf_df['TP']/(perf_df['TP'] + perf_df['FP'])
+    final_perf_df['recall'] = perf_df['TP']/(perf_df['TP'] + perf_df['FN'])
+    final_perf_df['f1score'] = 2*((final_perf_df['precision']*final_perf_df['recall'])/(final_perf_df['precision']+final_perf_df['recall']))
+
+    final_perf_df = final_perf_df.drop(['switch_type', 'min_telemetry_push_time'], axis=1)
+
+    return final_perf_df, metrics['throughput_nrmse'].reset_index(), metrics['avg_delay'].reset_index()
 
 
 
 # Plots a bar graph provied the destination file, tile, ylabel legend, the bars to be drwan, 
-def plot_bar_graph(filepath, title, ylabel, labels, bar_data, switch_type_count, label_decimal_house):
+def plot_bar_graph(filepath, title, ylabel, y_tick_labels, bar_data, switch_type_count, label_decimal_house):
     fig, ax = plt.subplots(figsize=(8,5))
 
     n = int(switch_type_count/2)
@@ -180,7 +191,7 @@ def plot_bar_graph(filepath, title, ylabel, labels, bar_data, switch_type_count,
     width = 0.2
     pos = [p*width for p in pos] 
     max_, count = 0, 0
-    x = np.arange(len(labels))
+    x = np.arange(len(y_tick_labels))
 
     for switch_type, switch_type_data in bar_data.items():
         sorted_avg_list = sorted(switch_type_data, key=lambda tuple_: tuple_[2]) # Sort by min_push_time
@@ -203,7 +214,7 @@ def plot_bar_graph(filepath, title, ylabel, labels, bar_data, switch_type_count,
     ax.set_ylabel(ylabel)
     ax.set_ylim([0, max_+0.25*max_])
 
-    ax.set_xticks(np.arange(0, len(labels), 1), labels)
+    ax.set_xticks(np.arange(0, len(y_tick_labels), 1), y_tick_labels)
     ax.set_xlabel('Telemetry insertion time (s)')
 
     h1, l1 = ax.get_legend_handles_labels()

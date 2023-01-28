@@ -38,12 +38,8 @@ def main(args):
     udp_port = 50000
     for config in configuration:
 
-        #print(*config.items())
         pps = config['throughput']/(8*PKT_SIZE_WITH_HEADER)
         amt_packets = pps*float(config['execution_time'])
-
-        #print(pps)
-        #print(amt_packets)
 
         pkt = Ether(dst='ff:ff:ff:ff:ff:ff', src=get_if_hwaddr('eth0')) / \
                 IP(dst=config['dst_ip'])/UDP(sport=udp_port,dport=udp_port)/Raw(RandString(size=(PKT_SIZE_WITH_HEADER-HEADER_SIZE)))

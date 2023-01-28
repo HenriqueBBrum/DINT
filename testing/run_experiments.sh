@@ -54,12 +54,13 @@ sed -i "s/const bit<48> obs_window = [^ ]*/const bit<48> obs_window = $min_time_
 sed -i "s/const bit<48> obs_window = [^ ]*/const bit<48> obs_window = $min_time_microseg;/" ../src/main_LINT.p4 
 
 
-for ((i = 1; i <= "$loops"; i++ )); do
+for ((i = 1; i <= $loops; i++ )); do
 	echo $experiment_type
 	/bin/bash ./experiment_scripts/experiment.sh $experiment_type $parent_path $plotting_scripts_folder $experiment_time $min_time
 
-	name="results_""$min_time""_$i"
-	folder="$final_output_folder""$name"
+	name="results_mintime_""$min_time"_loop_"$i"
+	mkdir "$final_output_folder""$experiment_type"
+	folder="$final_output_folder""$experiment_type"/"$name"
 	echo $folder
 
 	# if [ "$i" -eq "$loops" ] 
@@ -67,5 +68,8 @@ for ((i = 1; i <= "$loops"; i++ )); do
 	# 	python3 $plotting_scripts_folder/comparison_plots.py -i $output_dir/graphs_input/ -g $output_dir/graphs_output/ -e $experiment_script
 	# fi
 
-	#sh ./scripts/copy_and_remove.sh "$folder" 
+	sh ./experiment_scripts/copy_and_remove.sh "$folder" 
 done
+
+
+stty erase ^H

@@ -11,7 +11,7 @@
 const bit<8> alpha = 1; // Equals to 2^-1
 const bit<8> delta = 6; // Equals to 2^-1
 
-const bit<48> obs_window = 1000000; // 1 Seg = 1000000 microseg
+const bit<48> obs_window = 100000; // 1 Seg = 1000000 microseg
 
 
 
@@ -74,6 +74,8 @@ bit<1> report_metrics(inout metadata meta, in bit<32> pres_amt_bytes){
 
     return report;
 }
+
+
 
 void five_tuple_hash(inout headers hdr, inout metadata meta){
     hash(meta.flow_id, 
