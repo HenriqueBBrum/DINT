@@ -34,7 +34,7 @@ cd ../src
 
 #for i in static DINT sINT LINT; do
 
-for i in static; do
+for i in static DINT LINT; do
 	make clean
 	p4_src="main_""$i"".p4"
 	config_file="$i""_tcpreplay.json"

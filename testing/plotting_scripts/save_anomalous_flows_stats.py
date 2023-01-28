@@ -53,10 +53,10 @@ def main(args):
     real_anomalous_flows, amt_real_flows = find_real_anomalous_flows(throughput_threshold,duration_threshold)
     tel_anomalous_flows = get_telemetry_anomalous_flows(args['experiment_type'])
 
-    classification_accuracy, throughput_nrmse, avg_delay = anomalous_flows_stats(real_anomalous_flows, tel_anomalous_flows, amt_real_flows, duration_threshold)
+    confusion_matrix, throughput_nrmse, avg_delay = anomalous_flows_stats(real_anomalous_flows, tel_anomalous_flows, amt_real_flows, duration_threshold)
 
-    if classification_accuracy:
-        save_anomalous_flows_stats(args, classification_accuracy, throughput_nrmse, avg_delay)
+    if confusion_matrix:
+        save_anomalous_flows_stats(args, confusion_matrix, throughput_nrmse, avg_delay)
 
 
 
@@ -107,7 +107,7 @@ def anomalous_flows_stats(real_anomalous_flows, tel_anomalous_flows, amt_real_fl
     if(set(real_anomalous_flows.keys()) != set(tel_anomalous_flows.keys())):
         return {}, {}, {}
 
-    classification_accuracy = {}
+    confusion_matrix = {}
     throughput_nrmse = {}
     avg_delay = {}
    
@@ -115,22 +115,17 @@ def anomalous_flows_stats(real_anomalous_flows, tel_anomalous_flows, amt_real_fl
         real_anom_five_tuples = real_anomalous_flows[switch_type].keys()
         tel_anom_five_tuples = tel_anomalous_flows[switch_type].keys()
 
-        print(list(tel_anom_five_tuples - real_anom_five_tuples))
-
         true_positives = len(list(real_anom_five_tuples & tel_anom_five_tuples))
         false_positives = len(list(tel_anom_five_tuples - real_anom_five_tuples))
         false_negatives = len(list(real_anom_five_tuples - tel_anom_five_tuples))
         true_negatives =  amt_real_flows[switch_type] - true_positives - false_positives - false_negatives
 
-        classification_accuracy[switch_type] = {"TPR": true_positives/(true_positives+false_negatives),
-                                                  "FPR": false_positives/(false_positives+true_negatives), 
-                                                      "FNR":  false_negatives/(false_negatives+true_positives)} # TPR, FNR
-
-
+        confusion_matrix[switch_type] = {"TP": true_positives,"FP": false_positives, "FN":  false_negatives, "TN": true_negatives} 
+                                                      
         real_anom_flows_throughput = []
         tel_anom_flows_throughput = []
         tel_anom_flows_delay = []
-        for five_tuple in real_anomalous_flows[switch_type]:
+        for five_tuple in list(real_anom_five_tuples & tel_anom_five_tuples):
             real_anom_flows_throughput.append(real_anomalous_flows[switch_type][five_tuple][0])
             tel_anom_flows_throughput.append(tel_anomalous_flows[switch_type][five_tuple][0])
 
@@ -142,28 +137,29 @@ def anomalous_flows_stats(real_anomalous_flows, tel_anomalous_flows, amt_real_fl
 
         avg_delay[switch_type] = sum(tel_anom_flows_delay)/len(tel_anom_flows_delay)
 
-    return classification_accuracy, throughput_nrmse, avg_delay
+    return confusion_matrix, throughput_nrmse, avg_delay
 
 
 
-def save_anomalous_flows_stats(args, classification_accuracy, throughput_nrmse, avg_delay):
+def save_anomalous_flows_stats(args, confusion_matrix, throughput_nrmse, avg_delay):
     filepath = constants.ANOMALOUS_FLOWS_DATA_FOLDER+args['experiment_type']+".csv"
     file_exists = os.path.isfile(filepath)
 
-    print(classification_accuracy)
+    print(confusion_matrix)
 
     with open(filepath, "a") as csvfile:
-        headers = ['switch_type', 'switch_id', 'min_telemetry_push_time', 'experiment_time', 'TPR', 'FPR', 'FNR', 'throughput_nrmse', 'avg_delay']
+        headers = ['switch_type', 'switch_id', 'min_telemetry_push_time', 'experiment_time', 'TP', 'FP', 'FN', 'TN', 'throughput_nrmse', 'avg_delay']
         writer = csv.DictWriter(csvfile, delimiter=',', lineterminator='\n',fieldnames=headers)
 
         if (not file_exists):
             writer.writeheader()  # file doesn't exist yet, write a header
 
 
-        for switch_type, cl_accuracy in classification_accuracy.items():
+        for switch_type, matrix in confusion_matrix.items():
+            print(matrix)
             writer.writerow({'switch_type': switch_type, 'switch_id':args['switch_id'], 'min_telemetry_push_time': args['min_telemetry_push_time'], 
-                                 'experiment_time': args['experiment_duration'], 'TPR': cl_accuracy['TPR'], 'FPR': cl_accuracy['FPR'], 
-                                 'FNR': cl_accuracy['FNR'],  'throughput_nrmse': throughput_nrmse[switch_type], 'avg_delay':avg_delay[switch_type]})
+                                 'experiment_time': args['experiment_duration'], 'TP': matrix['TP'], 'FP': matrix['FP'], 'FN': matrix['FN'],
+                                 'TN': matrix['TN'],  'throughput_nrmse': throughput_nrmse[switch_type], 'avg_delay':avg_delay[switch_type]})
 
 
 
