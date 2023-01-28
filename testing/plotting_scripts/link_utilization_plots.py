@@ -21,12 +21,12 @@ import constants
 
 
 class FlowStats:
-  def __init__(self, flow_id, experiment_start, first_flow_apperance):
+  def __init__(self, flow_id, experiment_start, monitor_latest_tel_timestamp):
     self.flow_id = flow_id
     self.timestamp_x = [experiment_start]
     self.throughput_y = [0]
     self.experiment_start = experiment_start
-    self.current_tel_monitor_timestamp = first_flow_apperance
+    self.monitor_latest_tel_timestamp = monitor_latest_tel_timestamp
 
 
   def __str__(self):
@@ -63,65 +63,64 @@ def main(args):
         switch_type = os.path.basename(telemetry_data_file).split("_")[0]
 
         real_traffic_file = constants.TRAFFIC_DATA_FOLDER+switch_type+"_real_output.csv"
-        real_timestamp_x, real_throughput_y, total_real_traffic, experiment_start = real_traffic_data(args, real_traffic_file)
+        real_timestamp_x, real_throughput_y, total_real_traffic_volume, experiment_start = real_traffic_data(args, real_traffic_file)
 
         tel_flows_stats, total_tel_count, total_tel_overhead, practical_tel_overhead = read_telemetry_file(args, telemetry_data_file, experiment_start)
 
-        total_tel_throughput_y = [0]*len(real_timestamp_x)
+        total_tel_throughput_y = [0]*len(real_throughput_y)
         for flow_stat in tel_flows_stats.values():
             adjusted_flow_throughput_y = adjust_tel_throughput(real_timestamp_x, flow_stat.timestamp_x, flow_stat.throughput_y)
             total_tel_throughput_y = list(map(add, adjusted_flow_throughput_y, total_tel_throughput_y))
 
-
         plot_line_graph(args, switch_type, experiment_start, real_timestamp_x, real_throughput_y, total_tel_throughput_y)
 
        
-        print(switch_type, args['min_telemetry_push_time'], total_tel_overhead, practical_tel_overhead , total_tel_overhead/total_real_traffic)
+        print(switch_type, args['min_telemetry_push_time'], total_tel_overhead, practical_tel_overhead , total_tel_overhead/total_real_traffic_volume)
 
         nrmse = sqrt(np.square(np.subtract(real_throughput_y, total_tel_throughput_y)).mean())
         nrmse = nrmse/(max(real_throughput_y) - min(real_throughput_y))
         print("nrmse", nrmse)
         
-        save_nrmse_and_telemetry_overhead(args, switch_type, nrmse, total_tel_count,  practical_tel_overhead, total_tel_overhead/total_real_traffic)
+        save_nrmse_and_telemetry_overhead(args, switch_type, nrmse, total_tel_count,  practical_tel_overhead, total_tel_overhead/total_real_traffic_volume)
        
 
 
 # Reads real data from csv file to find the amount of bytes transported each 'min_push_time' or if 'min_push_time' > 1s then each 1s
 def real_traffic_data(args, real_data_file):
     min_push_time = 1 if args['min_telemetry_push_time'] >= 1 else args['min_telemetry_push_time'] 
-    xy = dict.fromkeys(np.arange(0, args['experiment_duration']+min_push_time, min_push_time), 0)
-
-    total_real_traffic = 0
+ 
+    real_timestamp_x, real_throughput_y = [], [0]
+    total_real_traffic_volume = 0
     grouped_amt_bytes = 0
     current_time = 0
     experiment_start = 0
 
+    decimal_houses = str(min_push_time)[::-1].find('.')
+
     with open(real_data_file) as csvfile:
         data = list(csv.DictReader(csvfile, delimiter=','))
         experiment_start = float(data[0]['frame.time_epoch'])
+        real_timestamp_x.append(experiment_start)
         for row in data:
             if(float(row['frame.time_relative']) >= args['experiment_duration']):
                 break
 
-            total_real_traffic+=int(row['frame.len'])
+            total_real_traffic_volume+=int(row['frame.len'])
 
             # Keeps adding each pkt size until a second has elapsed. After summing up all bytes in that second, write to list
-            if(float(row['frame.time_relative']) - current_time <= min_push_time):
-                grouped_amt_bytes+=int(row['frame.len'])
+            if(float(row['frame.time_relative']) - float(current_time) <= min_push_time):
+                grouped_amt_bytes+=float(row['frame.len'])
             else:
-                xy[current_time+min_push_time] = grouped_amt_bytes/(constants.METRIC_UNIT[args['unit']]*min_push_time)
-              
-                current_time = current_time + min_push_time
-                grouped_amt_bytes=int(row['frame.len'])
+                current_time = current_time  + min_push_time
+                real_timestamp_x.append(experiment_start + current_time)
+                real_throughput_y.append(grouped_amt_bytes/(constants.METRIC_UNIT[args['unit']]*min_push_time))
 
-        xy[current_time+min_push_time] = grouped_amt_bytes/(constants.METRIC_UNIT[args['unit']]*min_push_time)
+                grouped_amt_bytes=float(row['frame.len'])
 
-    real_timestamp_x, real_throughput_y = [], []
-    for key, value in xy.items():
-        real_timestamp_x.append(experiment_start+key)
-        real_throughput_y.append(value)
+        real_timestamp_x.append(experiment_start + current_time  + min_push_time)
+        real_throughput_y.append(grouped_amt_bytes/(constants.METRIC_UNIT[args['unit']]*min_push_time))
 
-    return real_timestamp_x, real_throughput_y, total_real_traffic, experiment_start
+    return real_timestamp_x, real_throughput_y, total_real_traffic_volume, experiment_start
 
 
 
@@ -152,19 +151,19 @@ def read_telemetry_file(args, telemetry_data_file, experiment_start):
                 if (flow_id not in flows_stat):
                     flows_stat[flow_id] = FlowStats(flow_id, experiment_start, float(cols[4]))
 
-                flows_stat[flow_id].current_tel_monitor_timestamp=float(cols[4])
+                flows_stat[flow_id].monitor_latest_tel_timestamp=float(cols[4])
             else:
                 if (cols[0]==args['switch_id']):
                     time_window_s = (int(cols[-1],10)-int(cols[-2],10))/(constants.MICROSEG)
                     time_window_s = 1 if time_window_s == 0 else time_window_s
 
 
-                    relative_timestamp = flows_stat[flow_id].current_tel_monitor_timestamp-experiment_start
+                    relative_timestamp = flows_stat[flow_id].monitor_latest_tel_timestamp-experiment_start
                     if (relative_timestamp>args['experiment_duration']):
                         hop_cnt-=1
                         continue
 
-                    flows_stat[flow_id].timestamp_x.append(float("{:.6f}".format(flows_stat[flow_id].current_tel_monitor_timestamp)))
+                    flows_stat[flow_id].timestamp_x.append(float("{:.6f}".format(flows_stat[flow_id].monitor_latest_tel_timestamp)))
                     flows_stat[flow_id].throughput_y.append((float(cols[1])/time_window_s)/constants.METRIC_UNIT[args['unit']])
 
                 hop_cnt-=1
