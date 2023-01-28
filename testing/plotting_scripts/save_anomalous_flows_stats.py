@@ -4,7 +4,7 @@
 # Generate link utilizaion step plots with matplotlib for each 'type' of switch.
 # This script also calculates the rmse and telemetry overhead  of each 'type'
 
-from math import sqrt, fabs, ceil
+from math import sqrt, fabs, ceil, floor
 import csv
 import argparse
 import os, sys
@@ -75,7 +75,7 @@ def find_real_anomalous_flows(throughput_threshold, duration_threshold):
                 amt_flows_count+=1
                 throughput = (float(row['total_bytes'])*8)/float(row['total_time']) # bits/s
                 five_tuple = (row['src_ip'], row['src_port'], row['dest_ip'], row['dest_port'], str(17))
-                if(throughput>throughput_threshold and float(row['total_time'])>duration_threshold):
+                if(throughput>throughput_threshold and floor(float(row['total_time'])*100)/100<=duration_threshold):
                     real_anomalous_flows[switch_type][five_tuple] = (throughput, float(row['total_time']))
 
         amt_flows[switch_type] = amt_flows_count
@@ -120,8 +120,9 @@ def anomalous_flows_stats(real_anomalous_flows, tel_anomalous_flows, amt_real_fl
         false_negatives = len(list(real_anom_five_tuples - tel_anom_five_tuples))
         true_negatives =  amt_real_flows[switch_type] - true_positives - false_positives - false_negatives
 
+
         confusion_matrix[switch_type] = {"TP": true_positives,"FP": false_positives, "FN":  false_negatives, "TN": true_negatives} 
-                                                      
+        print(confusion_matrix)                                            
         real_anom_flows_throughput = []
         tel_anom_flows_throughput = []
         tel_anom_flows_delay = []
@@ -129,13 +130,16 @@ def anomalous_flows_stats(real_anomalous_flows, tel_anomalous_flows, amt_real_fl
             real_anom_flows_throughput.append(real_anomalous_flows[switch_type][five_tuple][0])
             tel_anom_flows_throughput.append(tel_anomalous_flows[switch_type][five_tuple][0])
 
-            tel_anom_flows_delay.append(tel_anomalous_flows[switch_type][five_tuple][1] - duration_threshold)
+            tel_anom_flows_delay.append(max(0, tel_anomalous_flows[switch_type][five_tuple][1] - duration_threshold))
 
-    
-        rmse = sqrt(np.square(np.subtract(real_anom_flows_throughput, tel_anom_flows_throughput)).mean())
-        throughput_nrmse[switch_type] = rmse/(max(real_anom_flows_throughput) - min(real_anom_flows_throughput))
 
-        avg_delay[switch_type] = sum(tel_anom_flows_delay)/len(tel_anom_flows_delay)
+        rmse = sqrt(np.square(np.subtract(real_anom_flows_throughput, tel_anom_flows_throughput)).mean()) if len(tel_anom_flows_throughput) > 0 else 0
+        if(len(real_anom_flows_throughput) > 1):
+            throughput_nrmse[switch_type] = rmse/(max(real_anom_flows_throughput) - min(real_anom_flows_throughput))
+        else:
+            throughput_nrmse[switch_type] = rmse
+
+        avg_delay[switch_type] = sum(tel_anom_flows_delay)/(len(tel_anom_flows_delay) if len(tel_anom_flows_delay) >= 1 else 1)
 
     return confusion_matrix, throughput_nrmse, avg_delay
 
@@ -144,8 +148,6 @@ def anomalous_flows_stats(real_anomalous_flows, tel_anomalous_flows, amt_real_fl
 def save_anomalous_flows_stats(args, confusion_matrix, throughput_nrmse, avg_delay):
     filepath = constants.ANOMALOUS_FLOWS_DATA_FOLDER+args['experiment_type']+".csv"
     file_exists = os.path.isfile(filepath)
-
-    print(confusion_matrix)
 
     with open(filepath, "a") as csvfile:
         headers = ['switch_type', 'switch_id', 'min_telemetry_push_time', 'experiment_time', 'TP', 'FP', 'FN', 'TN', 'throughput_nrmse', 'avg_delay']

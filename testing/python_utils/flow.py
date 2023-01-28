@@ -1,6 +1,6 @@
 ## Used by receive.py to save Flow specific information
 import constants
-
+from math import floor
 
 
 class Flow:
@@ -50,14 +50,12 @@ class Flow:
         throughput_threshold=constants.MICROBURST_FLOW_THROUGHPUT_THRESHOLD
         duration_threshold=constants.MICROBURST_FLOW_TIME_THRESHOLD
 
-
-    if(self.is_anomalous_now is False and self.avg_throughput >= throughput_threshold and 
-        self.lastest_pdp_timestamp - self.first_pdp_timestamp >= duration_threshold*constants.MICROSEG):
+    duration = (self.lastest_pdp_timestamp - self.first_pdp_timestamp)/constants.MICROSEG
+    if(self.is_anomalous_now is False and self.avg_throughput >= throughput_threshold and floor(duration*100)/100 <= duration_threshold):
             self.is_anomalous_now = True
             self.was_anomalous = True
             self.anomalous_identification_timestamp.append((self.first_pdp_timestamp, self.lastest_pdp_timestamp))
     elif(self.is_anomalous_now is True and self.avg_throughput < throughput_threshold):
-        print("heyyyyyy")
         self.is_anomalous_now = False
         self.anomalous_identification_timestamp[-1][1] = self.lastest_pdp_timestamp
         

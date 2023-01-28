@@ -1,0 +1,27 @@
+{
+	"time":105,
+	"devices":[
+		{
+			"name":"h4", 
+			"cmds":["cd ../testing/results/traffic_data/", "touch LINT_real_output.pcapng", "chmod o=rw LINT_real_output.pcapng", 
+					"tshark -i eth0 -w LINT_real_output.pcapng -f \"ip and udp and portrange 50000-60000 and not icmp\" -a duration:105 &"]
+		},
+		{
+			"name":"h5",
+			"cmds":["cd  ../testing/node_communication/", "./receive.py -s LINT -e microbursts -t 105 &"]
+		},
+		{
+			"name":"h1",
+			"cmds":["cd  ../testing/experiment_traffic_generator/microbursts", "tcpreplay -i eth0 -K h1_tcpreplay_microbursts.pcapng &"]
+		},
+		{
+			"name":"h2",
+			"cmds":["cd  ../testing/experiment_traffic_generator/microbursts", "tcpreplay -i eth0 -K h2_tcpreplay_microbursts.pcapng &"]
+		},
+		{
+			"name":"h3",
+			"cmds":["cd  ../testing/experiment_traffic_generator/microbursts", "tcpreplay -i eth0 -K h3_tcpreplay_microbursts.pcapng &"]
+		}
+	]
+
+}

@@ -12,7 +12,7 @@ echo "Running $experiment_type experiment"
 echo "Min push time is: $min_time"
 
 
-evaluation_config_folder="$parent_script_path""/experiment_config/""$experiment_type""/"
+evaluation_config_folder="$parent_script_path""/experiment_config/""$experiment_type"
 
 
 
@@ -21,7 +21,7 @@ evaluation_config_folder="$parent_script_path""/experiment_config/""$experiment_
 extended_experiment_time=$(("$experiment_time" + 5))
 echo $extended_experiment_time
 
-for filename in "$evaluation_config_folder"*; do
+for filename in "$evaluation_config_folder"/*; do
 	sed -i -e "s/\"time\":[^ ]*/\"time\":"$extended_experiment_time",/; 
 				s/duration:[^ &]*/duration:"$extended_experiment_time"/;
 					s/-t [^ &]*/-t "$extended_experiment_time"/; 

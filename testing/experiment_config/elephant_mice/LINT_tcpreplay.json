@@ -12,15 +12,15 @@
 		},
 		{
 			"name":"h1",
-			"cmds":["cd  ../testing/node_communication/", "./send.py -i ../experiment_traffic_generator/elephant_mice/h1_elephant_mice_traffic.txt &"]
+			"cmds":["cd  ../testing/experiment_traffic_generator/elephant_mice", "tcpreplay -i eth0 -K h1_tcpreplay_elephant_mice.pcapng &"]
 		},
 		{
 			"name":"h2",
-			"cmds":["cd  ../testing/node_communication/", "./send.py -i ../experiment_traffic_generator/elephant_mice/h2_elephant_mice_traffic.txt &"]
+			"cmds":["cd  ../testing/experiment_traffic_generator/elephant_mice", "tcpreplay -i eth0 -K h2_tcpreplay_elephant_mice.pcapng &"]
 		},
 		{
 			"name":"h3",
-			"cmds":["cd  ../testing/node_communication/", "./send.py -i ../experiment_traffic_generator/elephant_mice/h3_elephant_mice_traffic.txt &"]
+			"cmds":["cd  ../testing/experiment_traffic_generator/elephant_mice", "tcpreplay -i eth0 -K h3_tcpreplay_elephant_mice.pcapng &"]
 		}
 	]
 

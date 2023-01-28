@@ -38,9 +38,9 @@ class FlowStats:
 def parse_args():
     parser = argparse.ArgumentParser(description=f"Send packets to a certain ip and port")
     parser.add_argument('-e', '--experiment_type', type=str, help = "The type of experiment (elephant_mice or microburst)", required=True)
-    parser.add_argument('-d', '--experiment_duration', type=float, help="Duration of the experiment'")
-    parser.add_argument('-s', '--switch_id', type=str, help="Switch id to be compared")
-    parser.add_argument('-m', '--min_telemetry_push_time', type=float, help="Minimum polling time in seconds used in the 'p4' files")
+    parser.add_argument('-d', '--experiment_duration', type=float, help="Duration of the experiment'", required=True)
+    parser.add_argument('-s', '--switch_id', type=str, help="Switch id to be compared", required=True)
+    parser.add_argument('-m', '--min_telemetry_push_time', type=float, help="Minimum polling time in seconds used in the 'p4' files", required=True)
     parser.add_argument('-u', '--unit', type=str, help = "Metric Unit (k, m, g)", required=False, default="k")
 
     return vars(parser.parse_args())
@@ -87,7 +87,7 @@ def main(args):
 
 # Reads real data from csv file to find the amount of bytes transported each 'min_push_time' or if 'min_push_time' > 1s then each 1s
 def real_traffic_data(args, real_data_file):
-    min_push_time = 1 if args['min_telemetry_push_time'] >= 1 else args['min_telemetry_push_time'] 
+    min_push_time = 1 if float(args['min_telemetry_push_time']) >= 1 else float(args['min_telemetry_push_time']) 
  
     real_timestamp_x, real_throughput_y = [], [0]
     total_real_traffic_volume = 0
