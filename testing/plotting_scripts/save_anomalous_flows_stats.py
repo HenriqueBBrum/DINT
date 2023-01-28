@@ -50,7 +50,7 @@ def main(args):
         throughput_threshold=constants.MICROBURST_FLOW_THROUGHPUT_THRESHOLD
         duration_threshold=constants.MICROBURST_FLOW_TIME_THRESHOLD
 
-    real_anomalous_flows, amt_real_flows = find_real_anomalous_flows(throughput_threshold,duration_threshold)
+    real_anomalous_flows, amt_real_flows = find_real_anomalous_flows(args['experiment_type'], throughput_threshold,duration_threshold)
     tel_anomalous_flows = get_telemetry_anomalous_flows(args['experiment_type'])
 
     confusion_matrix, throughput_nrmse, avg_delay = anomalous_flows_stats(real_anomalous_flows, tel_anomalous_flows, amt_real_flows, duration_threshold)
@@ -60,7 +60,7 @@ def main(args):
 
 
 
-def find_real_anomalous_flows(throughput_threshold, duration_threshold):
+def find_real_anomalous_flows(experiment_type, throughput_threshold, duration_threshold):
     real_anomalous_flows_files = glob.glob(constants.TRAFFIC_DATA_FOLDER+"*real_flows.csv")
     real_anomalous_flows = {}
     amt_flows = {}
@@ -75,7 +75,13 @@ def find_real_anomalous_flows(throughput_threshold, duration_threshold):
                 amt_flows_count+=1
                 throughput = (float(row['total_bytes'])*8)/float(row['total_time']) # bits/s
                 five_tuple = (row['src_ip'], row['src_port'], row['dest_ip'], row['dest_port'], str(17))
-                if(throughput>throughput_threshold and floor(float(row['total_time'])*100)/100<=duration_threshold):
+
+                if(experiment_type == "elephant_mice"):
+                    time_threshold_violated = float(row['total_time'])>=duration_threshold
+                else:
+                    time_threshold_violated = floor(float(row['total_time'])*100)/100>=duration_threshold
+
+                if(throughput>throughput_threshold and time_threshold_violated):
                     real_anomalous_flows[switch_type][five_tuple] = (throughput, float(row['total_time']))
 
         amt_flows[switch_type] = amt_flows_count

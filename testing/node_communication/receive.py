@@ -4,6 +4,7 @@ import argparse
 import csv
 import os, sys
 import time
+import traceback
 
 sys.path.append("../python_utils")
 import constants
@@ -32,12 +33,17 @@ def main(args):
     tel_output_file = constants.TRAFFIC_DATA_FOLDER+args['switch_type']+"_telemetry_pkts.txt"
     tel_file = open(tel_output_file, 'w')
 
+    #log = open("log.txt", 'w')
     try:
         sniff(iface = iface,
               prn = lambda x: handle_pkt(x, tel_file, args['experiment_type']), timeout = args['timeout'])
     except Exception as e:
         print(f"Error in sniff: {e}\n")
+        print(traceback.format_exc())
+        # log.write(f"Error in sniff: {e}\n")
+        # log.write(traceback.format_exc())
 
+    # log.close()
     tel_file.close()
 
     anomalous_flows_output = constants.TRAFFIC_DATA_FOLDER+args['switch_type']+"_"+args['experiment_type']+"_flows.csv"

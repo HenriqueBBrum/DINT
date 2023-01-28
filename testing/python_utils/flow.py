@@ -43,19 +43,24 @@ class Flow:
 
   def check_anomalous(self):
     throughput_threshold, duration_threshold = 0, 0
+    time_threshold_violated = False
+
+    duration = (self.lastest_pdp_timestamp - self.first_pdp_timestamp)/constants.MICROSEG
+
     if(self.experiment_type == "elephant_mice"):
         throughput_threshold=constants.ELEPHANT_FLOW_THROUGHPUT_THRESHOLD
         duration_threshold=constants.ELEPHANT_FLOW_TIME_THRESHOLD
+        time_threshold_violated = (duration >= duration_threshold)
     else:
         throughput_threshold=constants.MICROBURST_FLOW_THROUGHPUT_THRESHOLD
         duration_threshold=constants.MICROBURST_FLOW_TIME_THRESHOLD
+        time_threshold_violated = (floor(duration*100)/100 <= duration_threshold)
 
-    duration = (self.lastest_pdp_timestamp - self.first_pdp_timestamp)/constants.MICROSEG
-    if(self.is_anomalous_now is False and self.avg_throughput >= throughput_threshold and floor(duration*100)/100 <= duration_threshold):
+    if(self.is_anomalous_now is False and self.avg_throughput >= throughput_threshold and time_threshold_violated):
             self.is_anomalous_now = True
             self.was_anomalous = True
             self.anomalous_identification_timestamp.append((self.first_pdp_timestamp, self.lastest_pdp_timestamp))
-    elif(self.is_anomalous_now is True and self.avg_throughput < throughput_threshold):
-        self.is_anomalous_now = False
-        self.anomalous_identification_timestamp[-1][1] = self.lastest_pdp_timestamp
-        
+    # elif(self.is_anomalous_now is True and self.avg_throughput < throughput_threshold):
+    #     self.is_anomalous_now = False
+    #     self.anomalous_identification_timestamp[-1][1] = self.lastest_pdp_timestamp
+    #     
