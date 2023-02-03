@@ -29,8 +29,6 @@ def parse_args():
     return vars(parser.parse_args())
 
 
-color_dict={'static':'orange', 'DINT':'green', 'LINT':'red'}
-
 def main(args):
     args = parse_args()
 
@@ -48,25 +46,42 @@ def main(args):
     performance, flow_bandwidth_nrmse, avg_delays = anomalous_flows_stats(anomalous_flows_stats_file)
 
     performance_csv_path =  constants.ANOMALOUS_FLOWS_DATA_FOLDER+args['experiment_type']+"_performance_results.csv"
-    performance.round(3).to_csv(performance_csv_path, mode='a',index=False, header=not os.path.exists(performance_csv_path))
+    performance.round(3).to_csv(performance_csv_path, mode='w',index=False, header=not os.path.exists(performance_csv_path))
 
+    nmrse_data = list(zip(flow_bandwidth_nrmse['switch_type'], flow_bandwidth_nrmse['mean'], flow_bandwidth_nrmse['std'], 
+        flow_bandwidth_nrmse['min_telemetry_push_time']))
 
-    print(flow_bandwidth_nrmse)
-    
-    nmrse_data = dict(zip(flow_bandwidth_nrmse['switch_type'],(zip(flow_bandwidth_nrmse['mean'], flow_bandwidth_nrmse['std'], 
-        flow_bandwidth_nrmse['min_telemetry_push_time']))))
 
     ordered_y_tick_labels = sorted(flow_bandwidth_nrmse['min_telemetry_push_time'].unique().tolist())
     flow_bandwidth_nrmse_fp = constants.ANOMALOUS_FLOWS_DATA_FOLDER+args['experiment_type']+"_avg_flow_bandwidth_nrmse_fp.png"
     flow_bandwidth_nrmse_graph_title = 'Measurement Error - '+'(SW'+switch_id+', '+total_time+'s)'
-    print("---------------------")
-
     final_flow_nrmse = {}
-    for key, value in nmrse_data.items():
-        final_flow_nrmse[key] = [value]
+    for value in nmrse_data:
+        if value[0] not in final_flow_nrmse:
+            final_flow_nrmse[value[0]] = [] #key = static type
+        final_flow_nrmse[value[0]].append((value[1], value[2], value[3])) #key = static type
 
-    plot_bar_graph(flow_bandwidth_nrmse_fp, flow_bandwidth_nrmse_graph_title, 'NRMSE  (%)', ordered_y_tick_labels, final_flow_nrmse, len(nmrse_data.keys()), '4')
+    #print(final_flow_nrmse)
 
+    plot_bar_graph(flow_bandwidth_nrmse_fp, flow_bandwidth_nrmse_graph_title, 'NRMSE  (%)', ordered_y_tick_labels, final_flow_nrmse, len(final_flow_nrmse.keys()), '4')
+
+    delay_data = list(zip(avg_delays['switch_type'], avg_delays['mean'], avg_delays['std'], avg_delays['min_telemetry_push_time']))
+
+    print(delay_data)
+
+    ordered_y_tick_labels = sorted(avg_delays['min_telemetry_push_time'].unique().tolist())
+    detection_delay_fp = constants.ANOMALOUS_FLOWS_DATA_FOLDER+args['experiment_type']+"_avg_detection_delay.png"
+    detection_delay_graph_title = 'Average Detection Delay - '+'(SW'+switch_id+', '+total_time+'s)'
+    print("---------------------")
+    final_flow_delay = {}
+    for value in delay_data:
+        if value[0] not in final_flow_delay:
+            final_flow_delay[value[0]] = [] #key = static type
+        final_flow_delay[value[0]].append((value[1], value[2], value[3])) #key = static type
+
+    print(final_flow_delay)
+
+    plot_bar_graph(detection_delay_fp, detection_delay_graph_title, 'NRMSE  (%)', ordered_y_tick_labels, final_flow_delay, len(final_flow_delay.keys()), '3')
 
 def group_nrmse_and_overhead_data(nrmse_and_overhead_file):
     grouped_data = {}
@@ -174,6 +189,8 @@ def anomalous_flows_stats(anomalous_flows_stats_file):
 
     final_perf_df = final_perf_df.drop(['switch_type', 'min_telemetry_push_time'], axis=1)
 
+    metrics = metrics.sort_values(by=['switch_type'], ascending=False)
+
     return final_perf_df, metrics['throughput_nrmse'].reset_index(), metrics['avg_delay'].reset_index()
 
 
@@ -209,7 +226,8 @@ def plot_bar_graph(filepath, title, ylabel, y_tick_labels, bar_data, switch_type
 
         count+=1
 
-   
+    #ax.set_yscale('log')
+    #plt.ticklabel_format(axis='both', style='sci', scilimits=(0,0))
     add_value_labels(ax, label_decimal_house, y_spacing=-2)
     ax.set_ylabel(ylabel)
     ax.set_ylim([0, max_+0.25*max_])
