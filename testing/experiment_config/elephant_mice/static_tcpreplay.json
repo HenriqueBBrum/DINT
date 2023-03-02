@@ -2,9 +2,9 @@
 	"time":105,
 	"devices":[
 		{
-			"name":"h4", 
+			"name":"s4", 
 			"cmds":["cd ../testing/results/traffic_data/", "touch static_real_output.pcapng", "chmod o=rw static_real_output.pcapng", 
-					"tshark -i eth0 -w static_real_output.pcapng -f \"ip and udp and portrange 50000-60000 and not icmp\" -a duration:105 &"]
+					"tshark -f \"ip and udp and portrange 50000-60000 and not icmp\" -i s4-eth2 -i s4-eth3 -i s4-eth4 -w static_real_output.pcapng -a duration:105 &"]
 		},
 		{
 			"name":"h5",

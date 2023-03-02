@@ -32,7 +32,7 @@ done
 cd ../src
 
 
-#for i in static DINT sINT LINT; do
+#for i in  DINT LINT; do
 
 for i in static DINT LINT; do
 	make clean
