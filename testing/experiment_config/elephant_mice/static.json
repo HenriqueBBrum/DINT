@@ -1,0 +1,24 @@
+{
+	"time":105,
+	"devices":[
+		{
+			"name":"h1",
+			"cmds":["cd  ../testing/experiment_traffic_generator/elephant_mice", "chmod o=rw h1_tcpreplay_elephant_mice.pcapng",
+					"tshark -i eth0 -w h1_tcpreplay_elephant_mice.pcapng -f \"ip and udp and portrange 50000-60000 and not icmp\" -a duration:105 &",
+					"cd ../../node_communication", "./send.py -i ../experiment_traffic_generator/elephant_mice/h1_elephant_mice_traffic.txt &"]
+		},
+		{
+			"name":"h2",
+			"cmds":["cd  ../testing/experiment_traffic_generator/elephant_mice", "chmod o=rw h2_tcpreplay_elephant_mice.pcapng",
+					"tshark -i eth0 -w h2_tcpreplay_elephant_mice.pcapng -f \"ip and udp and portrange 50000-60000 and not icmp\" -a duration:105 &",
+					"cd ../../node_communication", "./send.py -i ../experiment_traffic_generator/elephant_mice/h2_elephant_mice_traffic.txt &"]
+		},
+		{
+			"name":"h3",
+			"cmds":["cd  ../testing/experiment_traffic_generator/elephant_mice", "chmod o=rw h3_tcpreplay_elephant_mice.pcapng",
+					"tshark -i eth0 -w h3_tcpreplay_elephant_mice.pcapng -f \"ip and udp and portrange 50000-60000 and not icmp\" -a duration:105 &",
+					"cd ../../node_communication", "./send.py -i ../experiment_traffic_generator/elephant_mice/h3_elephant_mice_traffic.txt &"]
+		}
+	]
+
+}
