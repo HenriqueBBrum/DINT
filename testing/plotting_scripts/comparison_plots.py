@@ -64,23 +64,6 @@ def main(args):
 
     plot_bar_graph(flow_bandwidth_nrmse_fp, flow_bandwidth_nrmse_graph_title, 'NRMSE  (%)', ordered_y_tick_labels, final_flow_nrmse, len(final_flow_nrmse.keys()), '4')
 
-    # delay_data = list(zip(avg_delays['switch_type'], avg_delays['mean'], avg_delays['std'], avg_delays['min_telemetry_push_time']))
-
-    # print(delay_data)
-
-    # ordered_y_tick_labels = sorted(avg_delays['min_telemetry_push_time'].unique().tolist())
-    # detection_delay_fp = constants.ANOMALOUS_FLOWS_DATA_FOLDER+args['experiment_type']+"_avg_detection_delay.png"
-    # detection_delay_graph_title = 'Average Detection Delay - '+'(SW'+switch_id+', '+total_time+'s)'
-    # print("---------------------")
-    # final_flow_delay = {}
-    # for value in delay_data:
-    #     if value[0] not in final_flow_delay:
-    #         final_flow_delay[value[0]] = [] #key = static type
-    #     final_flow_delay[value[0]].append((value[1], value[2], value[3])) #key = static type
-
-   #print(final_flow_delay)
-
-    #plot_bar_graph(detection_delay_fp, detection_delay_graph_title, 'NRMSE  (%)', ordered_y_tick_labels, final_flow_delay, len(final_flow_delay.keys()), '3')
 
 def group_nrmse_and_overhead_data(nrmse_and_overhead_file):
     grouped_data = {}
@@ -161,11 +144,6 @@ def plot_nmrse_and_overhead_graphs(graph_bars_data, experiment_type, switch_id, 
     overhead_graph_filepath = output_folder+experiment_type+'_Tel_Overhead_'+switch_id+'_'+total_time.split('.')[0]+'s.png'
     overhead_graph_ylabel = 'Total Overhead ('+unit.upper()+'Bytes)'
     plot_bar_graph(overhead_graph_filepath, overhead_graph_title, overhead_graph_ylabel, ordered_y_tick_labels, tel_overhead_data, len(switch_type_set), '1')
-
-
-    # byte_cnt_title = 'Telemetry Overhead - '+'(SW'+switch_id+', '+total_time+'s)'
-    # byte_cnt_fp = output_folder+experiment_type+'_Tel_Overhead_'+switch_id+'_'+total_time.split('.')[0]+'s.png'
-    # plot_bar_graph(byte_cnt_fp, byte_cnt_title, 'Overhead compared to Total traffic (%)', *crete_bar_graph_rects(data, 3, 100), "3")
 
 
 
