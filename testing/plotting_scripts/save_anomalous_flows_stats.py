@@ -76,13 +76,17 @@ def find_real_anomalous_flows(experiment_type, throughput_threshold, duration_th
                 throughput = (float(row['total_bytes'])*8)/float(row['total_time']) # bits/s
                 five_tuple = (row['src_ip'], row['src_port'], row['dest_ip'], row['dest_port'], str(17))
 
+                
+
                 if(experiment_type == "elephant_mice"):
                     time_threshold_violated = float(row['total_time'])>=duration_threshold
                 else:
-                    time_threshold_violated = floor(float(row['total_time'])*100)/100>=duration_threshold
+                    time_threshold_violated = floor(float(row['total_time'])*100)/100<=duration_threshold
 
+              
                 if(throughput>throughput_threshold and time_threshold_violated):
                     real_anomalous_flows[switch_type][five_tuple] = (throughput, float(row['total_time']))
+                
 
         amt_flows[switch_type] = amt_flows_count
 

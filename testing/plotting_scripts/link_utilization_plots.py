@@ -13,6 +13,7 @@ import os, sys
 import numpy as np
 import pandas as pd
 import glob
+import operator
 
 
 sys.path.append("../python_utils")
@@ -92,32 +93,33 @@ def real_traffic_data(args, real_data_file):
     real_timestamp_x, real_throughput_y = [], [0]
     total_real_traffic_volume = 0
     grouped_amt_bytes = 0
-    current_time = 0
     experiment_start = 0
 
     decimal_houses = str(min_push_time)[::-1].find('.')
-
+    ct = 0
     with open(real_data_file) as csvfile:
         data = list(csv.DictReader(csvfile, delimiter=','))
         experiment_start = float(data[0]['frame.time_epoch'])
         real_timestamp_x.append(experiment_start)
-        for row in data:
-            if(float(row['frame.time_relative']) >= args['experiment_duration']):
+        current_time = experiment_start
+        sorted_data = sorted(data, key=lambda row: row['frame.time_epoch'])
+        for row in sorted_data:
+            if(float(row['frame.time_epoch']) >= experiment_start + args['experiment_duration']):
                 break
 
             total_real_traffic_volume+=int(row['frame.len'])
 
             # Keeps adding each pkt size until a second has elapsed. After summing up all bytes in that second, write to list
-            if(float(row['frame.time_relative']) - float(current_time) <= min_push_time):
+            if(float(row['frame.time_epoch']) - float(current_time) <= min_push_time):
                 grouped_amt_bytes+=float(row['frame.len'])
             else:
                 current_time = current_time  + min_push_time
-                real_timestamp_x.append(experiment_start + current_time)
+                real_timestamp_x.append(current_time)
                 real_throughput_y.append(grouped_amt_bytes/(constants.METRIC_UNIT[args['unit']]*min_push_time))
 
                 grouped_amt_bytes=float(row['frame.len'])
 
-        real_timestamp_x.append(experiment_start + current_time  + min_push_time)
+        real_timestamp_x.append(current_time  + min_push_time)
         real_throughput_y.append(grouped_amt_bytes/(constants.METRIC_UNIT[args['unit']]*min_push_time))
 
     return real_timestamp_x, real_throughput_y, total_real_traffic_volume, experiment_start
@@ -199,19 +201,25 @@ def plot_line_graph(args, switch_type, experiment_start, real_timestamp_x, real_
     plt.step(real_timestamp_x, real_throughput_y, color="b", label='Real')
     plt.plot([real_timestamp_x[0], real_timestamp_x[-1]] , [real_throughput_y[0], real_throughput_y[-1]], '*', color='b');
 
-    plt.step(real_timestamp_x, tel_throughput_y, color='r', label="Telemetry")
+    plt.step(real_timestamp_x, tel_throughput_y, color='r', label="Telemetry", alpha=0.7)
     plt.plot([real_timestamp_x[0], real_timestamp_x[-1]] , [tel_throughput_y[0], tel_throughput_y[-1]], '*', color='r');
 
     plt.fill_between(real_timestamp_x, real_throughput_y, tel_throughput_y, step='pre',  interpolate=True, facecolor='black', alpha=0.2, hatch="X")
-
 
     plt.xlabel("Time (s)")
     plt.ylabel("Traffic throughput ("+args['unit'].upper()+"bps)");
     #plt.title('Real link X Telemetry link')
     #plt.yticks(np.arange(0,4.5,0.5))
+    plt.ylim([0, 180])
 
     plt.gca().legend()
     plot1.savefig(constants.GRAPHS_FOLDER+args['experiment_type']+'_Real_X_Telemetry_'+switch_type+'_sw'+args['switch_id']+'.png')
+
+    plt.xlim([0, 8])
+    plt.ylim([0, 80])
+    #plt.show()
+    plot1.savefig(constants.GRAPHS_FOLDER+args['experiment_type']+'_zoomed_Real_X_Telemetry_'+switch_type+'_sw'+args['switch_id']+'.png')
+
     plot1.clf() 
 
 

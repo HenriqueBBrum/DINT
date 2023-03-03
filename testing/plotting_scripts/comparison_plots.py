@@ -43,10 +43,10 @@ def main(args):
 
 
     anomalous_flows_stats_file = constants.ANOMALOUS_FLOWS_DATA_FOLDER+args['experiment_type']+".csv"
-    performance, flow_bandwidth_nrmse, avg_delays = anomalous_flows_stats(anomalous_flows_stats_file)
+    performance, flow_bandwidth_nrmse = anomalous_flows_stats(anomalous_flows_stats_file)
 
     performance_csv_path =  constants.ANOMALOUS_FLOWS_DATA_FOLDER+args['experiment_type']+"_performance_results.csv"
-    performance.round(3).to_csv(performance_csv_path, mode='w',index=False, header=not os.path.exists(performance_csv_path))
+    performance.round(5).to_csv(performance_csv_path, mode='w',index=False)
 
     nmrse_data = list(zip(flow_bandwidth_nrmse['switch_type'], flow_bandwidth_nrmse['mean'], flow_bandwidth_nrmse['std'], 
         flow_bandwidth_nrmse['min_telemetry_push_time']))
@@ -61,27 +61,9 @@ def main(args):
             final_flow_nrmse[value[0]] = [] #key = static type
         final_flow_nrmse[value[0]].append((value[1], value[2], value[3])) #key = static type
 
-    #print(final_flow_nrmse)
 
     plot_bar_graph(flow_bandwidth_nrmse_fp, flow_bandwidth_nrmse_graph_title, 'NRMSE  (%)', ordered_y_tick_labels, final_flow_nrmse, len(final_flow_nrmse.keys()), '4')
 
-    delay_data = list(zip(avg_delays['switch_type'], avg_delays['mean'], avg_delays['std'], avg_delays['min_telemetry_push_time']))
-
-    print(delay_data)
-
-    ordered_y_tick_labels = sorted(avg_delays['min_telemetry_push_time'].unique().tolist())
-    detection_delay_fp = constants.ANOMALOUS_FLOWS_DATA_FOLDER+args['experiment_type']+"_avg_detection_delay.png"
-    detection_delay_graph_title = 'Average Detection Delay - '+'(SW'+switch_id+', '+total_time+'s)'
-    print("---------------------")
-    final_flow_delay = {}
-    for value in delay_data:
-        if value[0] not in final_flow_delay:
-            final_flow_delay[value[0]] = [] #key = static type
-        final_flow_delay[value[0]].append((value[1], value[2], value[3])) #key = static type
-
-    print(final_flow_delay)
-
-    plot_bar_graph(detection_delay_fp, detection_delay_graph_title, 'NRMSE  (%)', ordered_y_tick_labels, final_flow_delay, len(final_flow_delay.keys()), '3')
 
 def group_nrmse_and_overhead_data(nrmse_and_overhead_file):
     grouped_data = {}
@@ -154,7 +136,6 @@ def plot_nmrse_and_overhead_graphs(graph_bars_data, experiment_type, switch_id, 
 
     ordered_y_tick_labels = sorted(y_tick_labels)
     nrmse_graph_title = 'Measurement Error - '+'(SW'+switch_id+', '+total_time+'s)'
-    print(nmrse_data)
     nrmse_graph_filepath = output_folder+experiment_type+'_NRMSE_'+switch_id+'_'+total_time.split('.')[0]+'s.png'
     plot_bar_graph(nrmse_graph_filepath, nrmse_graph_title, 'NRMSE  (%)', ordered_y_tick_labels, nmrse_data, len(switch_type_set), '3')
 
@@ -163,11 +144,6 @@ def plot_nmrse_and_overhead_graphs(graph_bars_data, experiment_type, switch_id, 
     overhead_graph_filepath = output_folder+experiment_type+'_Tel_Overhead_'+switch_id+'_'+total_time.split('.')[0]+'s.png'
     overhead_graph_ylabel = 'Total Overhead ('+unit.upper()+'Bytes)'
     plot_bar_graph(overhead_graph_filepath, overhead_graph_title, overhead_graph_ylabel, ordered_y_tick_labels, tel_overhead_data, len(switch_type_set), '1')
-
-
-    # byte_cnt_title = 'Telemetry Overhead - '+'(SW'+switch_id+', '+total_time+'s)'
-    # byte_cnt_fp = output_folder+experiment_type+'_Tel_Overhead_'+switch_id+'_'+total_time.split('.')[0]+'s.png'
-    # plot_bar_graph(byte_cnt_fp, byte_cnt_title, 'Overhead compared to Total traffic (%)', *crete_bar_graph_rects(data, 3, 100), "3")
 
 
 
@@ -186,12 +162,19 @@ def anomalous_flows_stats(anomalous_flows_stats_file):
     final_perf_df['precision'] = perf_df['TP']/(perf_df['TP'] + perf_df['FP'])
     final_perf_df['recall'] = perf_df['TP']/(perf_df['TP'] + perf_df['FN'])
     final_perf_df['f1score'] = 2*((final_perf_df['precision']*final_perf_df['recall'])/(final_perf_df['precision']+final_perf_df['recall']))
+    final_perf_df['delay_mean'] =  metrics['avg_delay'].reset_index()['mean']
+    final_perf_df['delay_std'] =  metrics['avg_delay'].reset_index()['std']
+
+    
+
+    print(final_perf_df)
 
     final_perf_df = final_perf_df.drop(['switch_type', 'min_telemetry_push_time'], axis=1)
 
     metrics = metrics.sort_values(by=['switch_type'], ascending=False)
 
-    return final_perf_df, metrics['throughput_nrmse'].reset_index(), metrics['avg_delay'].reset_index()
+
+    return final_perf_df, metrics['throughput_nrmse'].reset_index()
 
 
 

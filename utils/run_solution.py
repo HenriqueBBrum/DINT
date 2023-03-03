@@ -105,12 +105,18 @@ class Topology(Topo):
                          delay=link['latency'], bw=link['bandwidth'],
                          port2=sw_port)
 
+
+            #print(link)
+
         for link in switch_links:
             sw1_name, sw1_port = self.parse_switch_node(link['node1'])
             sw2_name, sw2_port = self.parse_switch_node(link['node2'])
             self.addLink(sw1_name, sw2_name,
                         port1=sw1_port, port2=sw2_port,
                         delay=link['latency'], bw=link['bandwidth'])
+
+            #print(link)
+
 
 
     def parse_switch_node(self, node):

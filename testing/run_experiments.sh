@@ -63,10 +63,10 @@ for ((i = 1; i <= $loops; i++ )); do
 	folder="$final_output_folder""$experiment_type"/"$name"
 	echo $folder
 
-	# if [ "$i" -eq "$loops" ] 
-	# then
-	# 	python3 $plotting_scripts_folder/comparison_plots.py -i $output_dir/graphs_input/ -g $output_dir/graphs_output/ -e $experiment_script
-	# fi
+	if [ "$i" -eq "$loops" ] 
+	then
+		python3 $plotting_scripts_folder/comparison_plots.py -i $output_dir/graphs_input/ -g $output_dir/graphs_output/ -e $experiment_script
+	fi
 
 	sh ./experiment_scripts/copy_and_remove.sh "$folder" 
 done

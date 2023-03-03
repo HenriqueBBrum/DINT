@@ -11,7 +11,7 @@
 const bit<8> alpha = 1; // Equals to 2^-1
 const bit<8> delta = 6; // Equals to 2^-1
 
-const bit<48> obs_window = 1000000; // 1 Seg = 1000000 microseg
+const bit<48> obs_window = 250000; // 1 Seg = 1000000 microseg
 
 
 
@@ -169,16 +169,6 @@ control MyIngress(inout headers hdr,
                 }
 
 
-                if(!hdr.telemetry.isValid()){
-                    hdr.ethernet.ether_type = TYPE_TELEMETRY;
-
-                    hdr.telemetry.setValid();
-                    hdr.telemetry.hop_cnt = 0;
-                    hdr.telemetry.next_header_type = TYPE_IPV4;
-                    hdr.telemetry.telemetry_data_sz = TEL_DATA_SZ;
-                    hdr.telemetry.flow_id = meta.flow_id;
-                }
-
 
                 if(now - previous_insertion >= obs_window){
                     bit<1> report = report_metrics(meta, amt_bytes);
@@ -206,6 +196,17 @@ control MyIngress(inout headers hdr,
 *************************************************************************/
 
 void insert_telemetry(inout headers hdr, inout metadata meta, in bit<32> tel_amt_bytes){
+
+        if(!hdr.telemetry.isValid()){
+            hdr.ethernet.ether_type = TYPE_TELEMETRY;
+
+            hdr.telemetry.setValid();
+            hdr.telemetry.hop_cnt = 0;
+            hdr.telemetry.next_header_type = TYPE_IPV4;
+            hdr.telemetry.telemetry_data_sz = TEL_DATA_SZ;
+            hdr.telemetry.flow_id = meta.flow_id;
+        }
+
         if(hdr.telemetry.hop_cnt < MAX_HOPS){
             hdr.telemetry.hop_cnt = hdr.telemetry.hop_cnt + 1;
 
