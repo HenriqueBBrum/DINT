@@ -20,7 +20,7 @@ const bit<8> alpha_2 = 2; //shift divisor
 const bit<64> div = 0x1999999A; /// Used to divide a number by 10
 const bit<64> div_100 = 0x28F5C29;
 
-const bit<32> N = 8;
+const bit<32> k = 8;
 const bit<8> div_shift = 3;
 const bit<32> base_delta = 300;
 
@@ -62,26 +62,26 @@ time_t min(in time_t v1, in time_t v2){
 *************************************************************************/
 
 
-void update_deltas(inout metadata meta, in bit<32> comparator, inout bit<32> delta){
+void update_deltas(in bit<32> port_id, in bit<32> comparator, inout bit<32> delta){
     bit<32> ct; bit<32> sum;
-    count_reg.read(ct, meta.port_id);
-    n_last_values_reg.read(sum, meta.port_id);
+    count_reg.read(ct, port_id);
+    n_last_values_reg.read(sum, port_id);
 
-    if(ct==N){
+    if(ct==k){
         bit<32> mean; bit<32> old_m;
         mean = sum >> div_shift;
 
         delta = (bit<32>)((div*(bit<64>)mean)>>32);
 
-        delta_reg.write(meta.port_id, delta);
+        delta_reg.write(port_id, delta);
         sum = 0;
         ct = 0;
     }
 
     sum = sum + comparator; ct = ct + 1;
 
-    n_last_values_reg.write(meta.port_id, sum);
-    count_reg.write(meta.port_id, ct);
+    n_last_values_reg.write(port_id, sum);
+    count_reg.write(port_id, ct);
 }
 
 
@@ -115,7 +115,7 @@ void update_telemetry_insertion_time(inout metadata meta, inout standard_metadat
             tel_insertion_window = min(max_t, (tel_insertion_window*alpha_1)>>alpha_2); // Increases time if bytes difference was smaller than expected
         }
 
-        update_deltas(meta, pres_amt_bytes, delta);
+        update_deltas(meta.port_id, pres_amt_bytes, delta);
 
         past_byte_cnt_reg.write(meta.port_id, pres_amt_bytes);
         pres_byte_cnt_reg.write(meta.port_id, 0);
@@ -350,7 +350,7 @@ control MyEgress(inout headers hdr,
                     hdr.ethernet.ether_type = TYPE_IPV4;
                 }
             }
-                
+
         }
     }
 }

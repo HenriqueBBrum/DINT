@@ -12,7 +12,7 @@ scripts_input_dir=$2
 
 
 
-cd ../src 
+cd ../src
 
 for i in 125 150 200; do
 
@@ -22,7 +22,7 @@ for i in 125 150 200; do
 
 	# Rename the pcap and telemetry files since they all have the same name
 	new_name="DINT-""$i""_"
-	for file in $scripts_input_dir/pkts_output/DINT_*; do 
+	for file in $scripts_input_dir/pkts_output/DINT_*; do
 		echo $file
 		mv $file ${file//DINT_/$new_name} 
 	done
@@ -33,9 +33,7 @@ done
 cd ../testing/plotting_scripts
 
 
-# Plot line graphs indicating the real link utilization and the one reported by the monitoring algorithm 
+# Plot line graphs indicating the real link utilization and the one reported by the monitoring algorithm
 
 python3 link_utilization_plots.py -i $scripts_input_dir/pkts_output/ -g \
 $scripts_input_dir/graphs_output/ -r $scripts_input_dir/graphs_input/ -d 60 -m "$1" -s 2 -u "m" -t "Payless"
-
-

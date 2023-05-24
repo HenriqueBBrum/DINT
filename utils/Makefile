@@ -44,11 +44,15 @@ ifdef TEST_JSON
 run_args += -e $(TEST_JSON)
 endif
 
-
+RESULTS_DIR = ../testing/results
 
 all: run
 
 run: build
+	mkdir $(RESULTS_DIR)
+	mkdir $(RESULTS_DIR)/graphs_input/
+	mkdir $(RESULTS_DIR)/graphs_output/
+	mkdir $(RESULTS_DIR)/pkts_output/
 	python3 $(CONFIGURE_SCRIPT) -p $(P4_SRC) -t $(TOPO)
 	sudo python3 $(RUN_SCRIPT) -t $(TOPO) $(run_args)
 
