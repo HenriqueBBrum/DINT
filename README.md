@@ -120,5 +120,5 @@ Finally, it's possible to specify the desired testing configuration. First, go t
 
 There are two branches in this repository:
 
-* _main_: This branch contains all the source code used in the article.
-* _results_: In this branch all the results obtained are stored.
+* _main_: This branch contains all the source code used in our SBRC 2023 article.
+* _micro_: This branch contains all the source code used in our NetSoft 2023 article (work in progress).
