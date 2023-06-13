@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 
 
-# Generate link utilizaion step plots with matplotlib for each 'type' of switch.
-# This script also calculates the rmse and telemetry overhead  of each 'type'
+# Runs the elephant_flow and microbursts detection applications and saves the classification performance and detection delay to a csv file
 
 from math import sqrt, fabs, ceil, floor
 import csv
@@ -29,7 +28,11 @@ def parse_args():
     return vars(parser.parse_args())
 
 
-
+# The main actions are the following:
+# 1 - Converts the .pcapng collected by the monitored switch during the experiments duration to a CSV format
+# 2 - Determines which flows were elephant or microbursts
+# 3 - Retrives the elephant flows or microbursts as informed by the monitiring algorithm using in-band network telemtry
+# 4 - Compares both results and save the metrics to a csv file
 def main(args):
     pcapng_files = glob.glob(constants.TRAFFIC_DATA_FOLDER+"*.pcapng")
     for f in pcapng_files:
@@ -59,7 +62,7 @@ def main(args):
         save_anomalous_flows_stats(args, confusion_matrix, throughput_nrmse, avg_delay)
 
 
-
+# Based on the CSV of the real traffic, detects if a flow was an elephant flow or a microburst (threshold-based)
 def find_real_anomalous_flows(experiment_type, throughput_threshold, duration_threshold):
     real_anomalous_flows_files = glob.glob(constants.TRAFFIC_DATA_FOLDER+"*real_flows.csv")
     real_anomalous_flows = {}
@@ -74,9 +77,7 @@ def find_real_anomalous_flows(experiment_type, throughput_threshold, duration_th
             for row in csvreader:
                 amt_flows_count+=1
                 throughput = (float(row['total_bytes'])*8)/float(row['total_time']) # bits/s
-                five_tuple = (row['src_ip'], row['src_port'], row['dest_ip'], row['dest_port'], str(17))
-
-                
+                five_tuple = (row['src_ip'], row['src_port'], row['dest_ip'], row['dest_port'], str(17)) # Only UDP flows
 
                 if(experiment_type == "elephant_mice"):
                     time_threshold_violated = float(row['total_time'])>=duration_threshold
@@ -92,7 +93,7 @@ def find_real_anomalous_flows(experiment_type, throughput_threshold, duration_th
 
     return real_anomalous_flows, amt_flows
 
-
+# Read the information about the anomalous flows as detected by the host running the node_communication/receive.py script
 def get_telemetry_anomalous_flows(experiment_type):
     tel_anomalous_flows_files = glob.glob(constants.TRAFFIC_DATA_FOLDER+"*"+experiment_type+"_flows.csv")
     tel_anomalous_flows = {}
@@ -112,7 +113,7 @@ def get_telemetry_anomalous_flows(experiment_type):
 
     return tel_anomalous_flows
 
-
+# Calculates the confusion matrix, the NMRSE of the throughput and the detection delay for the elephant flow or microburst detection application
 def anomalous_flows_stats(real_anomalous_flows, tel_anomalous_flows, amt_real_flows, duration_threshold):
     if(set(real_anomalous_flows.keys()) != set(tel_anomalous_flows.keys())):
         return {}, {}, {}
@@ -154,7 +155,7 @@ def anomalous_flows_stats(real_anomalous_flows, tel_anomalous_flows, amt_real_fl
     return confusion_matrix, throughput_nrmse, avg_delay
 
 
-
+# Saves the classification performance and detection delay metrics to a csv file
 def save_anomalous_flows_stats(args, confusion_matrix, throughput_nrmse, avg_delay):
     filepath = constants.ANOMALOUS_FLOWS_DATA_FOLDER+args['experiment_type']+".csv"
     file_exists = os.path.isfile(filepath)

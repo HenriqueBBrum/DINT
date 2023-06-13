@@ -1,3 +1,10 @@
+#!/usr/bin/env python3
+
+
+# Generate link utilizaion step plots with matplotlib for each 'type' of switch.
+# This script also calculates the nrmse and telemetry overhead  of each 'type' and saves to a txt file
+
+
 import matplotlib.pyplot as plt
 import matplotlib.ticker as plticker
 import csv

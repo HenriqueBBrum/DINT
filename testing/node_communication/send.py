@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-# Send telemtry files according to a flow frequency file that is modified by a monitoring host running 'receive_sINT.py'
-
+# Send packets according to the workload txt files in the experiment_traffic_generator folder
+# Each line in the txt file indicates the destination host, the bandwidth, the duration and the wait time to send the flow
 
 import time
 import argparse
@@ -28,7 +28,8 @@ def parse_args():
     return vars(parser.parse_args())
 
 
-
+# For each line, create a thread that sends packets according to the informed bandwidth and duration.
+# Each line is also a distinct flow since each thread has its own port
 def main(args):
     configuration = read_input_file(args['input_file']) 
     ordered_configuration = sorted(configuration,  key=lambda x: x['wait_time'], reverse=True)
@@ -37,7 +38,6 @@ def main(args):
 
     udp_port = 50000
     for config in configuration:
-
         pps = config['throughput']/(8*PKT_SIZE_WITH_HEADER)
         amt_packets = pps*float(config['execution_time'])
 
@@ -53,7 +53,7 @@ def main(args):
 
 items_name = ['dst_ip', 'throughput', 'execution_time', 'wait_time']
 
-# ip_addr, throughput (Xb/s), execution time (s), wait time (s)
+# Each line has the following information: destination IP, bandwidth (Xb/s), execution time (s), wait time (s)
 def read_input_file(filename):
     configuration = []
     with open(filename, 'r') as file:

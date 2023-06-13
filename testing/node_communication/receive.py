@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+### Receive incoming packets. If they have telemtry headers save information about the collected metrics 
+### Calculates flow based information used to detect elephant flows or microbursts
+
 import argparse
 import csv
 import os, sys
@@ -26,6 +29,7 @@ def parse_args():
 
 flows ={}
 
+# Saves telemtry reported information and the detected elephant flows or micobursts
 def main(args):
     print("Starting receiver")
     iface = 'h5-eth3'
@@ -33,19 +37,16 @@ def main(args):
     tel_output_file = constants.TRAFFIC_DATA_FOLDER+args['switch_type']+"_telemetry_pkts.txt"
     tel_file = open(tel_output_file, 'w')
 
-    #log = open("log.txt", 'w')
     try:
         sniff(iface = iface,
               prn = lambda x: handle_pkt(x, tel_file, args['experiment_type']), timeout = args['timeout'])
     except Exception as e:
         print(f"Error in sniff: {e}\n")
         print(traceback.format_exc())
-        # log.write(f"Error in sniff: {e}\n")
-        # log.write(traceback.format_exc())
-
-    # log.close()
+    
     tel_file.close()
 
+    # Saves information about the detected elephant flows or micrbursts
     anomalous_flows_output = constants.TRAFFIC_DATA_FOLDER+args['switch_type']+"_"+args['experiment_type']+"_flows.csv"
     with open(anomalous_flows_output, 'w') as csv_output_file:
         csv_writer=csv.writer(csv_output_file)
@@ -58,6 +59,8 @@ def main(args):
 
 
 count = 0
+MONITORED_SWITCH = 4
+# Handle each packet, and save the telemetry reported information. If the information is from the monitored switch, save the flow aggregated information
 def handle_pkt(pkt, tel_file, experiment_type):
     global count
     if Telemetry in pkt:
@@ -73,8 +76,11 @@ def handle_pkt(pkt, tel_file, experiment_type):
             throughput = (8.0*sw.amt_bytes/(tel_capture_period)) # bits/seconds
             tel_file.write(f"{sw.switch_id},  {sw.amt_bytes}, {sw.prev_timestamp}, {sw.curr_timestamp}\n")
 
-            if(int(sw.switch_id) == 4):
+            ## Save flow information if the metrics come from the monitored siwtchh, in this case it's switch 4
+            if(int(sw.switch_id) == MONITORED_SWITCH):
                 if five_tuple in flows:
+                    # If a flow stops sending information after a ceratin period and a new packet arrives with the same five_tuple, 
+                    # this new packet is considered a new flow
                     if (tel_capture_period > constants.FLOW_TIMEOUT):
                         flows[five_tuple].same_id_but_different_flow(throughput, sw.prev_timestamp, sw.curr_timestamp) 
                     else:

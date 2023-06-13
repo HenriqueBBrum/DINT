@@ -1,7 +1,8 @@
 #!/bin/bash
 
-traffic_data_folder=$1
+# This script converts a pcapng file to a csv and only saves relevant information. The traffic is onyl UDP
 
+traffic_data_folder=$1
 cd $traffic_data_folder
 
 switch_type=$2

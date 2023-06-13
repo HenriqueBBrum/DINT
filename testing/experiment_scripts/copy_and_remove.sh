@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copy some of the contents of the testing/results folder and remove them afterwards
+# Copy some of the contents of the testing/results folder to the <output_folder> and remove them afterwards
 
 output_folder=$1
 scripts_input_dir=~/Documents/DINT/testing/results

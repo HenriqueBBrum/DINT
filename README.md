@@ -2,49 +2,42 @@
 
 DINT is a dynamic in-band network telemetry algorithm that keeps an accurate view of the network information while causing minimal network overhead in programmable networks. 
 
-This repository contains the necessary tools and 
- to run DINT and the other solutions compared in the article. The results obtained and used in the article are also stored here. 
+This repository contains the necessary tools to run DINT and the other algorithms compared in our article. 
 
 
 ## Installation Guide
 
-To run DINT, follow the instructions in the section *Obtaining required software* in the [P4 tutorials Repository](https://github.com/p4lang/tutorials).
-
-After completing those steps, open the VM, **go to the \~/Documents folder** and clone this repo with the following command: 
+To run DINT, follow the instructions in the section *Obtaining required software* in the [P4 tutorials Repository](https://github.com/p4lang/tutorials). After completing those steps, open the VM, **go to the \~/Documents folder** and clone this repo with the following command: 
 
 ```
 git clone -b main --single-branch https://github.com/HenriqueBBrum/DINT.git 
 ```
 
-If you would also like to clone the results used in the DINT article run this:
+> To check our paper's final results go to our google drive folder with the [NetSoft 2023 results](https://drive.google.com/drive/folders/14hhirZpIgI2-LsnEub-rUIznKYLPIxZN?usp=drive_link)
 
-```
-git clone https://github.com/HenriqueBBrum/DINT.git 
-```
-
-Finally, install tcpreplay to replay the exeperiments used in the paper.
+Then, install *tcpreplay*:
 
 ```
 sudo apt-get install tcpreplay
 ```
 
-That's it, now you can start testing DINT!
+### Python prerequisites 
 
-
-## Python prerequisites 
-
-Even though you can execute P4 programs and get the resulting files just with the installation steps before, to execute the graph plotting python scripts used in this work you need to install the following python packages:
+Even though you can execute P4 programs and get the resulting files just with the installation steps before, to execute the graph plotting Python scripts used in this work, you need to install the following Python packages:
 
 ```
 pip install matplotlib numpy pandas scapy
 ```
+
+That's it; now you can start testing DINT!
+
 
 ## Usage Guide
 
 
 DINT and the other algorithms can be automatically tested by running the script *run_testing.sh* in the *testing* folder. Remember to give execution permission with *chmod*.
 ```
-./run_evaluation.sh <test_script> <results_output_folder> <min_time> <loops>
+./run_experiments.sh <experiment_type> <final_output_folder> <experiment_time> <min_time> <loops>
 ```
 * test_script: It can be one of these three values, scripts/run_comparison_evaluation.sh, scripts/run_alpha_evaluation.sh, or run_k_evaluation.sh. Correspondingly, the P4 files in the src folder should be related to those evaluation scripts. The default P4 files are for the "comparison" evaluation. If you want to run another evaluation script, move the current P4 file to their *DINT* folder and the correct P4 files outside their *DINT* folder.
 
@@ -79,14 +72,6 @@ All data is saved in the results folder, where the evaluation scripts use it to 
 
 To reproduce the results obtained in the paper [DINT: A Dynamic Algorithm for In-band Network Telemetry]() three tests need to be executed:
 
-1. Evaluation of the alpha parameter
-2. Evaluation of the _k_ parameter
-3. Comparison between DINT alternatives
-
-
-You first need to move the P4 files of the desired test from their folder (in _src/DINT*_) to the parent folder (_src/_). After that, execute the *run_testing.sh* script informing the specific evaluation file in the *testing/scripts* folder as well as the rest of the parameters already mentioned. In the article we used 0.25, 0.5 and 1 for the <min_time> arguments and used 5 for the <loops> parameter. Besides changing the <min_time> in your execution command you also need to change the _obs_window_ variable in the DINT and LINT files and the _tel_insertion_min_window_ in the DINT files to be your <min_time>. Note that the time in p4 is in microseconds.
-
-Obs: One of our future plans is to have only one DINT\*.p4 file for the evaluation and just change the desired parameters. 
 
 ### Customization
 

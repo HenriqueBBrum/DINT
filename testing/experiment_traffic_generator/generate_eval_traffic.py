@@ -1,8 +1,23 @@
+### Script that creates the experiments workload ###
+# Input: a configuration file describing how the traffic should be created and where the resulting files should be stored
+
+## The input configuration file should have the following format:
+# - First line: The evaluation type, meaning elephant_mice or microbursts
+# - Second line: The destination IP
+# - Third line: The amount of hosts sending the desired workload
+# - Fourth line: The experiments total time
+# - Final N lines: The subsequent N lines describe the workload from each one of the hosts with the following format:
+#									<amt_flows> <totalbytes_gen_func> <gen_func_parameters> <duration_gen_func> <gen_func_parameters>, ....
+#					Each line (host) can have multiple flow generating strategies, each separated by a comma (,)
+# 	
+## The resulting files are in .txt format where each line has the following format:
+# 			<destination_IP> <bandwidth> <duration> <starting_time>
+#  The .txt files are used by the node_communication/send.py script
+
 import argparse
 from numpy import random
 
-
-# M/bits per seconds the throughput
+# Mbits per seconds the throughput
 
 def main(args):
 	unique_flows = []
@@ -53,8 +68,6 @@ def main(args):
 			output_file.close()				
 
 			count+=1
-
-
 
 
 
