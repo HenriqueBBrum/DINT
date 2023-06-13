@@ -13,7 +13,7 @@ To run DINT, follow the instructions in the section *Obtaining required software
 git clone -b main --single-branch https://github.com/HenriqueBBrum/DINT.git 
 ```
 
-Obs: To check our paper's final results go to our google drive folder -> https://drive.google.com/drive/folders/1vToH5-o-MjIs0y2trsfKRI2aIsnzJBpp?usp=drive_link
+> To check our paper's final results go to our google drive folder with the [SBRC 2023 results](https://drive.google.com/drive/folders/1vToH5-o-MjIs0y2trsfKRI2aIsnzJBpp?usp=drive_link)
 
 Then, install *tcpreplay*:
 
