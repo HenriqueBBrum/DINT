@@ -70,7 +70,7 @@ All data is saved in the *testing/results* folder.
 
 ## Reproduce paper evaluation
 
-To reproduce the results obtained in the paper [DINT: A Dynamic Algorithm for In-band Network Telemetry](), three tests need to be executed:
+To reproduce the results obtained in the paper [DINT: A Dynamic Algorithm for In-band Network Telemetry](https://sol.sbc.org.br/index.php/sbrc/article/view/24541), three tests need to be executed:
 
 1. Evaluation of the alpha parameter
 2. Evaluation of the _k_ parameter
