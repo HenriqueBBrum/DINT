@@ -34,9 +34,7 @@ That's it; now you can start testing DINT!
 ## Reproduce paper evaluation
 
 To reproduce the exact experiments performed in our paper [Providing Fine-grained Network Metrics for
-Monitoring Applications using In-band Telemetry](), start by downloading the input .pcapng files from our Google Drive folder.
-
-Go to [this link](https://drive.google.com/drive/folders/1HRkH4al5L0zLIjNbyue1A147HcwH5JTM?usp=sharing) and download the input files. Extract the files from the ZIP folder and move the *.pcapng* files with the **elephant_mice** string to the *DINT/testing/experiment_traffic_generator/elephant_mice* and the ones with the **microbursts** string to the *DINT/testing/experiment_traffic_generator/microbursts*
+Monitoring Applications using In-band Telemetry](), start by downloading our [Google Drive folder](https://drive.google.com/drive/folders/1HRkH4al5L0zLIjNbyue1A147HcwH5JTM?usp=sharing) contaning the experiments traffic. Extract the files from the ZIP folder and move the *.pcapng* files with the **elephant_mice** string to the *DINT/testing/experiment_traffic_generator/elephant_mice* and the ones with the **microbursts** string to the *DINT/testing/experiment_traffic_generator/microbursts*
 
 ```
 unzip ~/Downloads/DINT_NetSoft_Workload-*.zip
@@ -53,7 +51,7 @@ Follow the next steps to replicate the results for the microbursts case study. F
 
 ```
 cd ~/Documents/DINT
-mkdir -p results/microbursts
+mkdir results
 ```
 
 Now, go to the testing folder:
@@ -65,19 +63,19 @@ cd testing
 And run the following command:
 
 ```
-./run_experiments.sh microbursts ~/Documents/DINT/results/microbursts 100 0.1 5
+./run_experiments.sh microbursts ~/Documents/DINT/results/ 100 0.1 5
 ```
 
-Let it run; it will take approximately 26 minutes to receive all results since each INT algorithm (DINT, LINT, and the static) runs five times. After the experiment finishes, check your final results folder.
+Let it run; receiving all results will take approximately 26 minutes since each INT algorithm (DINT, LINT, and the static) runs five times. After the experiment, check your final results folder for the *graphs/* folder containing the plotted graphs and the *anomalous_flows_data/* folder for the classification performance results.
 
 
 ### Case Study 2: Monitoring Elephant Flows
 
-Follow the next steps to replicate the results for the elephant flows case study. First, create the folder to store your results:
+Follow the next steps to replicate the elephant flows case study results. First, create the folder to store your results:
 
 ```
 cd ~/Documents/DINT
-mkdir -p results/elephant_mice
+mkdir results
 ```
 
 Now, go to the testing folder:
@@ -86,15 +84,13 @@ Now, go to the testing folder:
 cd testing
 ```
 
-And run the following command to test the algorithms with the minimum telemetry insertion period equal to 0.5:
+Three minimum telemetry insertion values will be used for the elephant flows case study: 0.5s, 1s. and 2s. For each one of them, you need to run the following command:
 
 ```
-./run_experiments.sh elephant_mice ~/Documents/DINT/results/microbursts 100 0.5 5
+./run_experiments.sh elephant_mice ~/Documents/DINT/results/ 100 <min_tel_insertion> 5
 ```
 
-Let it run; it will take approximately 26 minutes to receive all results since each INT algorithm (DINT, LINT, and the static) runs five times. 
-
-After the experiments with min_tel_time=0.5s ends, del
+Let it run; it will take approximately 26 minutes for each \<min_tel_insertion\> value. After a run for one \<min_tel_insertion\> ended, change the \<min_tel_insertion\> to the next one until all three have been evaluated. After running all three experiments, check the last experiment's folder in the final results folder you provided. Look for the *graphs/* folder containing the plotted graphs and the *anomalous_flows_data/* folder for the classification performance results.
 
 ## Create your workload
 
@@ -109,12 +105,10 @@ Initially, we defined our desired workload for the **elephant_mice** and **micro
 - **Third line**: 		The number of hosts sending the desired workload
 - **Fourth line**: 		The experiment's total time
 - **Final N lines**: 	The subsequent N lines describe the workload from each one of the hosts with the following format:
-                    `<amt_flows> <totalbytes_gen_func> <gen_func_parameters> <duration_gen_func> <gen_func_parameters>, ...` 
-                    
-                    Each line (host) can have multiple flow-generating  strategies, each separated by a comma (,)
+                    `<amt_flows> <totalbytes_gen_func> <gen_func_parameters> <duration_gen_func> <gen_func_parameters>, ...` Each line (host) can have multiple flow-generating  strategies, each separated by a comma (,).
  	
 
-These text files were used as input to the *experiment_traffic_generator/generate_eval_traffic.py* script, and the information about each flow of an experiment was created (bandwidth and duration). The resulting text files (one for each host informed) from the *generate_eval_traffic.py* script have the information about each flow, where each line in the file has the following format:
+These text files were used as input to the *experiment_traffic_generator/generate_eval_traffic.py* script, and the information about each flow of an experiment was created (bandwidth and duration). The resulting text files (one for each host informed) from the *generate_eval_traffic.py* script have the information about each flow, where each line has the following format:
 			`<destination_IP> <flow_bandwidth> <flow_duration> <flow_starting_time>`
 
 Check the *\*traffic.txt* files in the *experiment_traffic_generator/elephant_mice* and *experiment_traffic_generator/microbursts* folders. Finally, the *node_communication/send.py* script uses these files to send the desired traffic.
