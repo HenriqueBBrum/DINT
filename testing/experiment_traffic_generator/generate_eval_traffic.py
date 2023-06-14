@@ -19,6 +19,14 @@
 import argparse
 from numpy import random
 
+
+def parse_args():
+	parser = argparse.ArgumentParser(description=f"Send packets to a certain ip and port")
+	parser.add_argument("-c", "--configuration_file", help="Input file containing information about the desired configuration", required=True, type=str)
+	parser.add_argument("-o", "--output_folder", help="Output folder for the traffic files", required=True, type=str)
+
+	return vars(parser.parse_args())
+
 def main(args):
 	unique_flows = []
 	with open(args['configuration_file'], 'r') as config:
@@ -70,12 +78,6 @@ def main(args):
 
 			count+=1
 
-def parse_args():
-	parser = argparse.ArgumentParser(description=f"Send packets to a certain ip and port")
-	parser.add_argument("-c", "--configuration_file", help="Input file containing information about the desired configuration", required=True, type=str)
-	parser.add_argument("-o", "--output_folder", help="Output folder for the traffic files", required=True, type=str)
-
-	return vars(parser.parse_args())
 
 if __name__ == '__main__':
     args = parse_args()

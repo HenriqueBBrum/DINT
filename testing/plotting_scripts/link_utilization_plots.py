@@ -197,13 +197,13 @@ def plot_line_graph(args, switch_type, experiment_start, real_timestamp_x, real_
 
     plt.xlabel("Time (s)")
     plt.ylabel("Traffic throughput ("+args['unit'].upper()+"bps)");
-    plt.ylim([0, 180])
+    #plt.ylim([0, 180])
 
     plt.gca().legend()
     plot1.savefig(constants.GRAPHS_FOLDER+args['experiment_type']+'_Real_X_Telemetry_'+switch_type+'_sw'+args['switch_id']+'.png')
 
     plt.xlim([0, 8])
-    plt.ylim([0, 80])
+    #plt.ylim([0, 80])
     plot1.savefig(constants.GRAPHS_FOLDER+args['experiment_type']+'_zoomed_Real_X_Telemetry_'+switch_type+'_sw'+args['switch_id']+'.png')
 
     plot1.clf() 

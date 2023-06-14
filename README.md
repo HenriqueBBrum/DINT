@@ -1,16 +1,15 @@
-# DINT: A Dynamic Algorithm for In-band Network Telemetry
+# Providing Fine-grained Network Metrics for Monitoring Applications using In-band Telemetry
 
-DINT is a dynamic in-band network telemetry algorithm that keeps an accurate view of the network information while causing minimal network overhead in programmable networks. 
-
-This repository contains the necessary tools to run DINT and the other algorithms compared in our article. 
+This repository contains the code and instructions needed to reproduce the experiments for the paper [Providing Fine-grained Network Metrics for
+Monitoring Applications using In-band Telemetry](). 
 
 
 ## Installation Guide
 
-To run DINT, follow the instructions in the section *Obtaining required software* in the [P4 tutorials Repository](https://github.com/p4lang/tutorials). After completing those steps, open the VM, **go to the \~/Documents folder** and clone this repo with the following command: 
+Before reading this tutorial, follow the instructions in the section *Obtaining required software* in the [P4 tutorials Repository](https://github.com/p4lang/tutorials). After completing those steps, open the VM, **go to the \~/Documents folder** and clone this repo with the following command: 
 
 ```
-git clone -b main --single-branch https://github.com/HenriqueBBrum/DINT.git 
+git clone -b micro --single-branch https://github.com/HenriqueBBrum/DINT.git 
 ```
 
 > To check our paper's final results go to our google drive folder with the [NetSoft 2023 results](https://drive.google.com/drive/folders/14hhirZpIgI2-LsnEub-rUIznKYLPIxZN?usp=drive_link)
@@ -32,85 +31,115 @@ pip install matplotlib numpy pandas scapy
 That's it; now you can start testing DINT!
 
 
-## Usage Guide
+## Reproduce paper evaluation
 
+To reproduce the exact experiments performed in our paper [Providing Fine-grained Network Metrics for
+Monitoring Applications using In-band Telemetry](), start by downloading the input .pcapng files from our Google Drive folder.
 
-DINT and the other algorithms can be automatically tested by running the script *run_testing.sh* in the *testing* folder. Remember to give execution permission with *chmod*.
-```
-./run_experiments.sh <experiment_type> <final_output_folder> <experiment_time> <min_time> <loops>
-```
-* test_script: It can be one of these three values, scripts/run_comparison_evaluation.sh, scripts/run_alpha_evaluation.sh, or run_k_evaluation.sh. Correspondingly, the P4 files in the src folder should be related to those evaluation scripts. The default P4 files are for the "comparison" evaluation. If you want to run another evaluation script, move the current P4 file to their *DINT* folder and the correct P4 files outside their *DINT* folder.
-
-* results_output_folder: Folder where the resulting files and graphs will be stored.
-
-* min_time: Variable used in the DINT, LINT, and static algorithms. This is only used for graphing and not inside the P4 programs.
-
-* loops: The amount of times the experiment is repeated.
-
-The *run_testing.sh* script builds each type of switch  (DINT, LINT, etc.) and runs the corresponding JSON test configuration file.
-
-After each algorithm has finished, the results are used with two python scripts to compare them. The scripts are inside the *evaluation_scripts* folder:
-
-* *link_utilization_plots.py*: This script plots a comparison between the real link utilization (seen by the destination host) and the telemetry link utilization (seen by the monitoring host). It also calculates the RMSE and telemetry overhead and saves it to another file.
-* *comparison_plots.py* This file creates multiple bar graphs of RMSE and telemetry overhea.
-
-
-To test each switch type individually, go to the *src* folder and first clean the environment.
+Go to [this link](https://drive.google.com/drive/folders/1HRkH4al5L0zLIjNbyue1A147HcwH5JTM?usp=sharing) and download the input files. Extract the files from the ZIP folder and move the *.pcapng* files with the **elephant_mice** string to the *DINT/testing/experiment_traffic_generator/elephant_mice* and the ones with the **microbursts** string to the *DINT/testing/experiment_traffic_generator/microbursts*
 
 ```
+unzip ~/Downloads/DINT_NetSoft_Workload-*.zip
+```
+
+```
+mv ~/Downloads/DINT_NetSoft_Workload/*elephant_mice* ~/Documents/DINT/testing/experiment_traffic_generator/elephant_mice
+mv ~/Downloads/DINT_NetSoft_Workload/*microbursts* ~/Documents/DINT/testing/experiment_traffic_generator/microbursts
+```
+
+### Case Study 1: Monitoring Microbursts 
+
+Follow the next steps to replicate the results for the microbursts case study. First, create the folder to store your results:
+
+```
+cd ~/Documents/DINT
+mkdir -p results/microbursts
+```
+
+Now, go to the testing folder:
+
+```
+cd testing
+```
+
+And run the following command:
+
+```
+./run_experiments.sh microbursts ~/Documents/DINT/results/microbursts 100 0.1 5
+```
+
+Let it run; it will take approximately 26 minutes to receive all results since each INT algorithm (DINT, LINT, and the static) runs five times. After the experiment finishes, check your final results folder.
+
+
+### Case Study 2: Monitoring Elephant Flows
+
+Follow the next steps to replicate the results for the elephant flows case study. First, create the folder to store your results:
+
+```
+cd ~/Documents/DINT
+mkdir -p results/elephant_mice
+```
+
+Now, go to the testing folder:
+
+```
+cd testing
+```
+
+And run the following command to test the algorithms with the minimum telemetry insertion period equal to 0.5:
+
+```
+./run_experiments.sh elephant_mice ~/Documents/DINT/results/microbursts 100 0.5 5
+```
+
+Let it run; it will take approximately 26 minutes to receive all results since each INT algorithm (DINT, LINT, and the static) runs five times. 
+
+After the experiments with min_tel_time=0.5s ends, del
+
+## Create your workload
+
+To create your workload, the first thing is to understand how our paper's workload was created. 
+
+### Generate the desired traffic
+
+Initially, we defined our desired workload for the **elephant_mice** and **microbursts** experiments. Check the *flows.txt* files in the *experiment_traffic_generator/elephant_mice* and *experiment_traffic_generator/microbursts* folders. These files are used to define how our workload is supposed to be generated. They have the following format:
+
+- **First line**: 		The type of the experiment, elephant_mice or microbursts
+- **Second line**: 		The destination IP
+- **Third line**: 		The number of hosts sending the desired workload
+- **Fourth line**: 		The experiment's total time
+- **Final N lines**: 	The subsequent N lines describe the workload from each one of the hosts with the following format:
+                    `<amt_flows> <totalbytes_gen_func> <gen_func_parameters> <duration_gen_func> <gen_func_parameters>, ...` 
+                    
+                    Each line (host) can have multiple flow-generating  strategies, each separated by a comma (,)
+ 	
+
+These text files were used as input to the *experiment_traffic_generator/generate_eval_traffic.py* script, and the information about each flow of an experiment was created (bandwidth and duration). The resulting text files (one for each host informed) from the *generate_eval_traffic.py* script have the information about each flow, where each line in the file has the following format:
+			`<destination_IP> <flow_bandwidth> <flow_duration> <flow_starting_time>`
+
+Check the *\*traffic.txt* files in the *experiment_traffic_generator/elephant_mice* and *experiment_traffic_generator/microbursts* folders. Finally, the *node_communication/send.py* script uses these files to send the desired traffic.
+
+Now that you understand how to generate your traffic, remove the existing files in the *experiment_traffic_generator/elephant_mice* and *experiment_traffic_generator/microbursts* folders and create your workload. Start by defining your *flows.txt* file, then read the *experiment_traffic_generator/generate_eval_traffic.py* code documentation, and, finally, run the *generate_eval_traffic.py* to create the workload for each one of your hosts.
+
+With these steps, you generated your workload. However, to not depend on Python and Scapy, we will use the tcpreplay to capture the base traffic that all our experiments will use.
+
+
+### Run the same workload for all experiments
+
+To run the same workload for all experiments, we will run one time with the *basic.p4* file and capture it with tcpreplay. 
+
+First, go to the *experiment_config/* folder and open the *get_tcpreplay_pcap.json* file with a text editor. Change the value for the **time** parameter to the one you provided when generating your workload. 
+
+The default experiment for the *get_tcpreplay_pcap.json* is the **elephant_mice**. If your workload is for the **elephant_mice** experiment, you can proceed to build the P4 switch and capture the traffic. If your workload is for the **microbursts** application, change every **elephant_mice** string for  **microbursts**.
+
+Now, it is time to build the *basic.p4* switch, use the *get_tcpreplay_pcap.json* file to configure our experiment and get the tcpreplay *.pcapng* files:
+
+```
+cd src/
 make clean
 ```
-Then run *make* with one of the available P4 programs (main_static.p4, main_DINT.p4, etc.) and a testing file. Except for the *sINT* testing files, the content is the same and only differs in the output files' names. The [Customization](#Customization) section explains how to customize different parts of this project, including P4 files.
-
 ```
-make P4_SRC=main_DINT.p4 TEST_JSON=../testing/config_files/DINT_tcpreplay.json
+make P4_SRC=basic.p4 TEST_JSON=../testing/experiment_config/get_tcpreplay_pcap.json 
 ```
 
-All data is saved in the results folder, where the evaluation scripts use it to plot multiple graphs.
-
-### Reproduce paper evaluation
-
-To reproduce the results obtained in the paper [DINT: A Dynamic Algorithm for In-band Network Telemetry]() three tests need to be executed:
-
-
-### Customization
-
-It is possible to customize the P4 code, the network topology, and the testing configuration used.
-
-#### P4 Program
-
-To customize the P4 code, go to the desired file and change to your requirements. To create a new P4 file, add a new file and write your P4 code. When creating a new P4 file, it's essential to consider the *table_entries* specified in your topology (see the next section for more information). Run your new P4 file with the following command:
-
-```
-make P4_SRC=<your_p4_file_name>.p4 TEST_JSON=../testing/config_files/<your_testing_file>.json
-```
-
-For more information about P4, go to these links:
-- [P4 Tutorials](https://github.com/p4lang/tutorials)
-- [P4_16 specification](https://p4.org/p4-spec/docs/P4-16-v1.0.0-spec.html)
-
-#### Network Topology
-
-Besides modifying how the switches process packets, it's also possible to change the network topology. There are three topology examples in the *src/topologies/* folder. To change between those topologies,  go to the *src/Makefile* and modify the value of the *TOPO* variable to be the path of the desired topology. 
-
-To create a new topology, check the ones in the *src/topologies* folder, but the idea is to follow these steps:
-- Create a *topology.json* file with the following fields:
-	- A *hosts* section with information such as IP, MAC, and commands to be executed.
-	- A *switches* section with the *runtime_json* object literal containing the path to the control plane information about each switch and an optional parameter called *cli_input* with CLI commands.
-	- A *links* section informing the links in the topology.
-- A *JSON* file with the control plane information about table entries for each switch. The tables in this file should match the tables described in the P4 program.
-- An optional *txt* file with CLI commands for a switch. This is used in this project to add a mirroring port to allow cloning a packet.
-
-
-#### Testing configuration
-
-Finally, it's possible to specify the desired testing configuration. First, go to the *testing/config_files* and check the structure of the configuration files. In the configuration files, it's possible to define the testing time and what happens in each device specified in the topology file. Essentially, each device needs to either send or receive traffic. Since the configuration files receive shell commands, you can easily customize them to send any traffic you want (Scapy, IPerf, DITG, etc.) and to receive and process the incoming packets as desired. Keep in mind that the commands are executed sequentially, starting with the first defined device in your configuration file. Besides that, commands block other commands, so always put an "&" after a command if it is a non-blocking command.
-
-
-
-## Branches
-
-There are two branches in this repository:
-
-* _main_: This branch contains all the source code used in the article.
-* _results_: In this branch all the results obtained are stored.
+After that, you can try DINT and the other algorithms using your workload. Follow the steps in the [Reproduce paper evaluation](#Reproduce-paper-evaluation) section for this.

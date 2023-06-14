@@ -64,7 +64,7 @@ for ((i = 1; i <= $loops; i++ )); do
 	# If it's the last iteration, plot the NMRSE and telemetry overhead graphs
 	if [ "$i" -eq "$loops" ] 
 	then
-		python3 $plotting_scripts_folder/comparison_plots.py -i $output_dir/graphs_input/ -g $output_dir/graphs_output/ -e $experiment_script
+		python3 $plotting_scripts_folder/comparison_plots.py -e $experiment_type -u k
 	fi
 
 	# Copies the results in the temporary folder to to correponsing folder within the <final_output_folder> directory

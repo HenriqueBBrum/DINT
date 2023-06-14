@@ -5,7 +5,6 @@
 # This script also calculates the average classification performance and detection delay of the elephant flow or micorbursts
 # detection app. for each switch 'type' and saves to a CSV file 
 
-
 import matplotlib.pyplot as plt
 import matplotlib.ticker as plticker
 import csv
@@ -17,7 +16,7 @@ import sys, os
 import pandas as pd
 
 
-sys.path.append("../python_utils")
+sys.path.append("python_utils")
 import constants
 
 
@@ -102,7 +101,6 @@ def avg_nmrse_and_overhead_results(grouped_nrmse_and_overhead_data):
             unit = 1
             if(data_name == 'tel_overhead'):
                 unit = constants.METRIC_UNIT[args['unit']]
-
                 
             avg_nrmse_and_overhead_data[composed_key][data_name] =  ((sum(data_array)/grouped_data['count'])/unit, np.std(data_array)/unit)
         final_data[first_key][second_key] = avg_nrmse_and_overhead_data[composed_key]
