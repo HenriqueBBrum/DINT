@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 
-# Generate link utilizaion step plots with matplotlib for each 'type' of switch.
+# Generates the throutpught line plots with matplotlib for each 'type' of switch.
 # This script also calculates the nrmse and telemetry overhead  of each 'type' and saves to a csv file
 
 import matplotlib.pyplot as plt
@@ -15,10 +15,8 @@ import pandas as pd
 import glob
 import operator
 
-
 sys.path.append("../python_utils")
 import constants
-
 
 
 class FlowStats:
@@ -34,7 +32,6 @@ class FlowStats:
     return f"FlowStats {self.flow_id}, timestamp_x: {self.timestamp_x}, throughput_y: {self.throughput_y}"+"\n"
 
 
-
 # Arguments that need to be informed for this program
 def parse_args():
     parser = argparse.ArgumentParser(description=f"Send packets to a certain ip and port")
@@ -47,9 +44,8 @@ def parse_args():
     return vars(parser.parse_args())
 
 
-
 def main(args):
-    # Transforms all pcapng files (real traffic) to csv files with the folowing headers: frame.number, frame.time_epoch, frame.time_relative, frame.len
+    # Transforms all input pcapng files (real traffic) into CSV files with the following headers: frame.number, frame.time_epoch, frame.time_relative, frame.len
     pcapng_files = glob.glob(constants.TRAFFIC_DATA_FOLDER+"*.pcapng")
     for f in pcapng_files:
         paths = f.split("/")
@@ -58,7 +54,7 @@ def main(args):
 
         os.system("tshark -r "+f+" -T fields -e frame.number -e frame.time_epoch -e frame.time_relative -e frame.len -e ip.src -e ip.dst -E header=y -E separator=, > "+filepath)
 
-
+    # Reads the telemetry reported info and the corresponding real data, plots the throughput line graphs, and saves the NMRSE and telemetry overhead information
     telemetry_files = glob.glob(constants.TRAFFIC_DATA_FOLDER+"*_telemetry_pkts.txt")
     for telemetry_data_file in telemetry_files:
         switch_type = os.path.basename(telemetry_data_file).split("_")[0]
@@ -76,17 +72,12 @@ def main(args):
         plot_line_graph(args, switch_type, experiment_start, real_timestamp_x, real_throughput_y, total_tel_throughput_y)
 
        
-        print(switch_type, args['min_telemetry_push_time'], total_tel_overhead, practical_tel_overhead , total_tel_overhead/total_real_traffic_volume)
-
         nrmse = sqrt(np.square(np.subtract(real_throughput_y, total_tel_throughput_y)).mean())
         nrmse = nrmse/(max(real_throughput_y) - min(real_throughput_y))
-        print("nrmse", nrmse)
-        
         save_nrmse_and_telemetry_overhead(args, switch_type, nrmse, total_tel_count,  practical_tel_overhead, total_tel_overhead/total_real_traffic_volume)
        
 
-
-# Reads real data from csv file to find the amount of bytes transported each 'min_push_time' or if 'min_push_time' > 1s then each 1s
+# Reads real traffic  data from CSV file to find the number of bytes transported at each 'min_push_time' or if 'min_push_time' > 1s, then at every 1s
 def real_traffic_data(args, real_data_file):
     min_push_time = 1 if float(args['min_telemetry_push_time']) >= 1 else float(args['min_telemetry_push_time']) 
  
@@ -123,8 +114,6 @@ def real_traffic_data(args, real_data_file):
         real_throughput_y.append(grouped_amt_bytes/(constants.METRIC_UNIT[args['unit']]*min_push_time))
 
     return real_timestamp_x, real_throughput_y, total_real_traffic_volume, experiment_start
-
-
 
 
 # Reads telemetry data from a custom txt file
@@ -173,7 +162,7 @@ def read_telemetry_file(args, telemetry_data_file, experiment_start):
     return flows_stat, total_tel_count, total_tel_overhead, practical_tel_overhead
 
 
-# Returns the flow telemetry reported throughput according to the real timestamp 
+# Returns the telemetry reported throughput according to the real timestamp  
 def adjust_tel_throughput(real_timestamp_x, tel_timestamp_x, tel_throughput_y):
     i, j = 0, 0
     adjusted_tel_throughput_y = []
@@ -190,7 +179,7 @@ def adjust_tel_throughput(real_timestamp_x, tel_timestamp_x, tel_throughput_y):
     return adjusted_tel_throughput_y
 
 
-# Plots link utilization graph in 'Scale'Bits pre second
+# Plots the link utilization graph in 'Scale'Bits pre second and a zoomed view of the first 8 seconds
 def plot_line_graph(args, switch_type, experiment_start, real_timestamp_x, real_throughput_y, tel_throughput_y):
     real_timestamp_x = [x - experiment_start for x in real_timestamp_x] # Ajdust time
     real_throughput_y = [y * 8 for y in real_throughput_y]
@@ -208,8 +197,6 @@ def plot_line_graph(args, switch_type, experiment_start, real_timestamp_x, real_
 
     plt.xlabel("Time (s)")
     plt.ylabel("Traffic throughput ("+args['unit'].upper()+"bps)");
-    #plt.title('Real link X Telemetry link')
-    #plt.yticks(np.arange(0,4.5,0.5))
     plt.ylim([0, 180])
 
     plt.gca().legend()
@@ -217,13 +204,12 @@ def plot_line_graph(args, switch_type, experiment_start, real_timestamp_x, real_
 
     plt.xlim([0, 8])
     plt.ylim([0, 80])
-    #plt.show()
     plot1.savefig(constants.GRAPHS_FOLDER+args['experiment_type']+'_zoomed_Real_X_Telemetry_'+switch_type+'_sw'+args['switch_id']+'.png')
 
     plot1.clf() 
 
 
-# Saves to a specific file nrmse(%) and byte count(Bytes) information
+# Saves to a specific file  thenrmse(%) and byte count(Bytes) information
 def save_nrmse_and_telemetry_overhead(args, switch_type, nrmse, total_tel_count, practical_tel_overhead, telemetry_percentage):
     filepath = constants.NRMSE_OVERHEAD_DATA_FOLDER+args['experiment_type']+".csv"
     file_exists = os.path.isfile(filepath)
@@ -238,8 +224,6 @@ def save_nrmse_and_telemetry_overhead(args, switch_type, nrmse, total_tel_count,
         writer.writerow({'switch_type': switch_type, 'switch_id':args['switch_id'], 'min_telemetry_push_time': args['min_telemetry_push_time'], 
                     'experiment_time': args['experiment_duration'], 'nrmse': nrmse,  'tel_packet_count': total_tel_count, 
                         'practical_tel_overhead': practical_tel_overhead, 'telemetry_percentage': telemetry_percentage})
-
-
 
 
 if __name__ == '__main__':

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-# Send packets according to the workload txt files in the experiment_traffic_generator folder
-# Each line in the txt file indicates the destination host, the bandwidth, the duration and the wait time to send the flow
+# Sends packets according to the workload .txt files in the experiment_traffic_generator folder
+# Each line in a .txt file indicates the destination host, the bandwidth, the duration and the wait time to send the flow
 
 import time
 import argparse
@@ -29,7 +29,7 @@ def parse_args():
 
 
 # For each line, create a thread that sends packets according to the informed bandwidth and duration.
-# Each line is also a distinct flow since each thread has its own port
+# Each line is also a distinct flow since each thread has its unique port
 def main(args):
     configuration = read_input_file(args['input_file']) 
     ordered_configuration = sorted(configuration,  key=lambda x: x['wait_time'], reverse=True)
@@ -78,14 +78,10 @@ def read_input_file(filename):
     return configuration
 
 
-
-
 def send_packets(pkt, pps, amt_packets, wait_time):
     print(f"Running thread with config: (pps={pps}), (amt_packets={amt_packets})")
     time.sleep(wait_time)
-
     sendpfast(pkt, pps=pps, loop=amt_packets)
-
 
 
 

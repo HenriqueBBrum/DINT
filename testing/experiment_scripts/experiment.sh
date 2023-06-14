@@ -11,11 +11,11 @@ min_time=$5
 echo "Running $experiment_type experiment"
 echo "Min push time is: $min_time"
 
-# Hosts and switch configurations. Indicates what each host or swtich is receiving, sending or measuring
+# Hosts and switch configuration. Indicates what each host or switch is receiving, sending, or measuring
 evaluation_config_folder="$parent_script_path""/experiment_config/""$experiment_type"
 
 
-# Subsitute total time in all configuration files of an experiment
+# Subsitutes the total time parameter in all configuration files of an experiment to the one passed as input to this script
 extended_experiment_time=$(("$experiment_time" + 5))
 echo $extended_experiment_time
 
@@ -29,7 +29,7 @@ done
 
 cd ../src
 
-# Main loop. Build each P4 switch and run the correponding configuration
+# Main loop. Builds each P4 switch and runs the corresponding configuration to use
 for i in static DINT LINT; do
 	make clean
 	p4_src="main_""$i"".p4"
@@ -40,9 +40,9 @@ done
 
 
 # Plots line graphs indicating the real link utilization and the one reported by the monitoring algorithm. 
-# Also saves NMRSE and telemtry overhead information to a txt file 
+# Also saves NMRSE and telemetry overhead information to a .txt file 
 cd $plotting_scripts_folder
 python3 link_utilization_plots.py -e $experiment_type -d $experiment_time -m $min_time -s 4 -u m 	
 
-# Run the classification algorithm for the <experiment_type> with the collected metrics
+# Saves the classification performance metrics of each experiment
 python3 save_anomalous_flows_stats.py -e $experiment_type -d $experiment_time -m $min_time -s 4

@@ -1,4 +1,4 @@
-# Script to modify s*-runtime.json files to change "p4info" and "bmv2_json" to have 'p4_file' in the path
+# Script to modify s*-runtime.json files to change "p4info" and "bmv2_json" to have <p4_file> in the path
 
 
 import argparse

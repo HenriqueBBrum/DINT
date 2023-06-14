@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 
 
-# Generate link utilizaion step plots with matplotlib for each 'type' of switch.
-# This script also calculates the nrmse and telemetry overhead  of each 'type' and saves to a txt file
+# Generates the NMRSE and Telemetry overhead bar plots with matplotlib.
+# This script also calculates the average classification performance and detection delay of the elephant flow or micorbursts
+# detection app. for each switch 'type' and saves to a CSV file 
 
 
 import matplotlib.pyplot as plt
@@ -27,7 +28,7 @@ font = {'size'   : 13}
 plt.rc('font', **font)
 plt.rcParams['axes.prop_cycle'] = plt.cycler(color=["tab:orange", "tab:green", "tab:red", "tab:blue"]) 
 
-# Arguments that need to be informed for this program
+# Arguments needed for this program
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('-e', '--experiment_type', type=str, help = "The type of experiment (elephant_mice or microburst)", required=True)
@@ -50,28 +51,14 @@ def main(args):
 
 
     anomalous_flows_stats_file = constants.ANOMALOUS_FLOWS_DATA_FOLDER+args['experiment_type']+".csv"
-    performance, flow_bandwidth_nrmse = anomalous_flows_stats(anomalous_flows_stats_file)
+    performance = anomalous_flows_stats(anomalous_flows_stats_file)
 
     performance_csv_path =  constants.ANOMALOUS_FLOWS_DATA_FOLDER+args['experiment_type']+"_performance_results.csv"
     performance.round(5).to_csv(performance_csv_path, mode='w',index=False)
 
-    nmrse_data = list(zip(flow_bandwidth_nrmse['switch_type'], flow_bandwidth_nrmse['mean'], flow_bandwidth_nrmse['std'], 
-        flow_bandwidth_nrmse['min_telemetry_push_time']))
 
-
-    ordered_y_tick_labels = sorted(flow_bandwidth_nrmse['min_telemetry_push_time'].unique().tolist())
-    flow_bandwidth_nrmse_fp = constants.ANOMALOUS_FLOWS_DATA_FOLDER+args['experiment_type']+"_avg_flow_bandwidth_nrmse_fp.png"
-    flow_bandwidth_nrmse_graph_title = 'Measurement Error - '+'(SW'+switch_id+', '+total_time+'s)'
-    final_flow_nrmse = {}
-    for value in nmrse_data:
-        if value[0] not in final_flow_nrmse:
-            final_flow_nrmse[value[0]] = [] #key = static type
-        final_flow_nrmse[value[0]].append((value[1], value[2], value[3])) #key = static type
-
-
-    plot_bar_graph(flow_bandwidth_nrmse_fp, flow_bandwidth_nrmse_graph_title, 'NRMSE  (%)', ordered_y_tick_labels, final_flow_nrmse, len(final_flow_nrmse.keys()), '4')
-
-
+# The nrmse_and_overhead_file file contains results from multiple types of experiments, switches, INT algorithms, and minimum telemetry push times.
+# This function groups the information of each unique experiment
 def group_nrmse_and_overhead_data(nrmse_and_overhead_file):
     grouped_data = {}
 
@@ -92,7 +79,10 @@ def group_nrmse_and_overhead_data(nrmse_and_overhead_file):
 
     return grouped_data
 
-
+# For each unique experiment's data, calculates the average and standard deviation of the NMRSE and the telemetry overhead.
+#
+# Saves the average data from all types of switches and min telemetry times from the same experiment type and measured on the same switch 
+# within the same dictionary
 def avg_nmrse_and_overhead_results(grouped_nrmse_and_overhead_data):
     avg_nrmse_and_overhead_data = {}
     final_data = {}
@@ -153,39 +143,7 @@ def plot_nmrse_and_overhead_graphs(graph_bars_data, experiment_type, switch_id, 
     plot_bar_graph(overhead_graph_filepath, overhead_graph_title, overhead_graph_ylabel, ordered_y_tick_labels, tel_overhead_data, len(switch_type_set), '1')
 
 
-
-def anomalous_flows_stats(anomalous_flows_stats_file):
-    df = pd.read_csv(anomalous_flows_stats_file, delimiter=',')
-    df['first_key'] = df['switch_id'].astype(str) + '_' + df['experiment_time'].astype(str)
-    df['second_key'] = df['switch_type'] + '_' + df['min_telemetry_push_time'].astype(str)
-    df['min_telemetry_push_time'].astype(str)
-
-    common_colums = ['first_key', 'second_key', 'switch_type', 'min_telemetry_push_time']
-    metrics = df.groupby(common_colums, as_index=False)[['throughput_nrmse', 'avg_delay']].agg([np.mean, np.std])
-    perf_df =  df.groupby(common_colums, as_index=False)[['TP', 'FP', 'FN', 'TN']].mean()
-
-    final_perf_df = perf_df[common_colums].copy()
-    final_perf_df['accuracy'] = (perf_df['TP'] + perf_df['TN'])/(perf_df['TP'] + perf_df['TN'] + perf_df['FP'] + perf_df['FN'])
-    final_perf_df['precision'] = perf_df['TP']/(perf_df['TP'] + perf_df['FP'])
-    final_perf_df['recall'] = perf_df['TP']/(perf_df['TP'] + perf_df['FN'])
-    final_perf_df['f1score'] = 2*((final_perf_df['precision']*final_perf_df['recall'])/(final_perf_df['precision']+final_perf_df['recall']))
-    final_perf_df['delay_mean'] =  metrics['avg_delay'].reset_index()['mean']
-    final_perf_df['delay_std'] =  metrics['avg_delay'].reset_index()['std']
-
-    
-
-    print(final_perf_df)
-
-    final_perf_df = final_perf_df.drop(['switch_type', 'min_telemetry_push_time'], axis=1)
-
-    metrics = metrics.sort_values(by=['switch_type'], ascending=False)
-
-
-    return final_perf_df, metrics['throughput_nrmse'].reset_index()
-
-
-
-# Plots a bar graph provied the destination file, tile, ylabel legend, the bars to be drwan, 
+# Plots a bar graph
 def plot_bar_graph(filepath, title, ylabel, y_tick_labels, bar_data, switch_type_count, label_decimal_house):
     fig, ax = plt.subplots(figsize=(8,5))
 
@@ -233,7 +191,6 @@ def plot_bar_graph(filepath, title, ylabel, y_tick_labels, bar_data, switch_type
     fig.savefig(filepath)         
 
     
-
 # Add a label on top of each bar plot
 def add_value_labels(ax, decimal_format=2, spacing=8, y_spacing=0, color='black'):
     for rect in ax.patches:
@@ -257,6 +214,29 @@ def add_value_labels(ax, decimal_format=2, spacing=8, y_spacing=0, color='black'
             )       
 
 
+# Using the confusion matrix saved by each experiment calculates the accuracy, precision, recall, and F1-Score. 
+# Also calculates the average and the standard deviation for the detection delay
+def anomalous_flows_stats(anomalous_flows_stats_file):
+    df = pd.read_csv(anomalous_flows_stats_file, delimiter=',')
+    df['first_key'] = df['switch_id'].astype(str) + '_' + df['experiment_time'].astype(str)
+    df['second_key'] = df['switch_type'] + '_' + df['min_telemetry_push_time'].astype(str)
+    df['min_telemetry_push_time'].astype(str)
+
+    common_colums = ['first_key', 'second_key', 'switch_type', 'min_telemetry_push_time']
+    metrics = df.groupby(common_colums, as_index=False)[['throughput_nrmse', 'avg_delay']].agg([np.mean, np.std])
+    perf_df =  df.groupby(common_colums, as_index=False)[['TP', 'FP', 'FN', 'TN']].mean()
+
+    final_perf_df = perf_df[common_colums].copy()
+    final_perf_df['accuracy'] = (perf_df['TP'] + perf_df['TN'])/(perf_df['TP'] + perf_df['TN'] + perf_df['FP'] + perf_df['FN'])
+    final_perf_df['precision'] = perf_df['TP']/(perf_df['TP'] + perf_df['FP'])
+    final_perf_df['recall'] = perf_df['TP']/(perf_df['TP'] + perf_df['FN'])
+    final_perf_df['f1score'] = 2*((final_perf_df['precision']*final_perf_df['recall'])/(final_perf_df['precision']+final_perf_df['recall']))
+    final_perf_df['delay_mean'] =  metrics['avg_delay'].reset_index()['mean']
+    final_perf_df['delay_std'] =  metrics['avg_delay'].reset_index()['std']
+    
+    final_perf_df = final_perf_df.drop(['switch_type', 'min_telemetry_push_time'], axis=1)
+
+    return final_perf_df
 
 
 if __name__ == '__main__':

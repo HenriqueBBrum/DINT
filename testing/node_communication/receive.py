@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-### Receive incoming packets. If they have telemtry headers save information about the collected metrics 
-### Calculates flow based information used to detect elephant flows or microbursts
+# Receives all incoming packets to a host. If a packet has telemetry headers, the information about the collected metrics is saved
+# This script also saves flow information that is used to detect elephant flows or microbursts in the plotting_scripts/save_anomalous_flows_stats.py script
 
 import argparse
 import csv
@@ -17,7 +17,6 @@ from telemetry_headers import *
 from flow import *
 
 
-
 def parse_args():
     parser = argparse.ArgumentParser(description=f"Receive packets and save them to a file")
     parser.add_argument('-e', '--experiment_type', type=str, help = "The type of experiment (elephant_mice or microburst)", required=True)
@@ -29,7 +28,8 @@ def parse_args():
 
 flows ={}
 
-# Saves telemtry reported information and the detected elephant flows or micobursts
+# Saves all telemetry reported information and the information about the detected elephant flows or microbursts. 
+# To understand how the elephant flows, or microbursts are detected check the python_utils/flow.py script
 def main(args):
     print("Starting receiver")
     iface = 'h5-eth3'
@@ -60,7 +60,8 @@ def main(args):
 
 count = 0
 MONITORED_SWITCH = 4
-# Handle each packet, and save the telemetry reported information. If the information is from the monitored switch, save the flow aggregated information
+
+# Handles each packet and saves the telemetry reported information. If the information is from the monitored switch, save the flow aggregated information
 def handle_pkt(pkt, tel_file, experiment_type):
     global count
     if Telemetry in pkt:
@@ -89,7 +90,6 @@ def handle_pkt(pkt, tel_file, experiment_type):
                     flows[five_tuple] = Flow(flow_id, throughput, sw.prev_timestamp, sw.curr_timestamp, experiment_type)
                 
         count+=1
-
 
 
 def get_packet_layers(packet):

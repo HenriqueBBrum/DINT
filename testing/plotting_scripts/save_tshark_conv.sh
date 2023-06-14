@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# This script converts a pcapng file to a csv and only saves relevant information. The traffic is onyl UDP
+# This script converts a pcapng file to a csv and only saves relevant information. The traffic is only UDP
 
 traffic_data_folder=$1
 cd $traffic_data_folder

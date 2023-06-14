@@ -38,7 +38,7 @@ register<bit<32>>(MAX_FLOWS) past_reported_obs_reg;
 *************************************************************************/
 
 
-
+/* Checks if a metric should be added to a packet */
 bit<1> report_metrics(inout metadata meta, in bit<32> pres_amt_bytes){
 
     bit<1> report = 0;
@@ -167,7 +167,6 @@ control MyIngress(inout headers hdr,
                     previous_insertion = now;
                     previous_insertion_reg.write(meta.flow_id, now);
                 }
-
 
 
                 if(now - previous_insertion >= obs_window){

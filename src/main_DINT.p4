@@ -65,8 +65,8 @@ time_t min(in time_t v1, in time_t v2){
 *************************************************************************/
 
 
-
-void update_deltas(inout metadata meta, in bit<32> comparator, inout bit<32> delta){
+/* Updates the dynamic threshold according to the SIMPLE MOVING AVERAGE function of the last k measured throughputs */
+void update_delta(inout metadata meta, in bit<32> comparator, inout bit<32> delta){
     bit<32> ct; bit<32> sum;
     count_reg.read(ct, meta.flow_id);
     n_last_values_reg.read(sum, meta.flow_id);
@@ -90,7 +90,8 @@ void update_deltas(inout metadata meta, in bit<32> comparator, inout bit<32> del
 
 
 
-/* Updates gather_windows according to the amount of bytes counted since last time it was updated */
+/* Updates the telemetry insertion period according by comparing the 
+   the difference in bytes between the current and previous observation window with a dynamic threshold (delta)  */
 void update_telemetry_insertion_time(inout metadata meta, inout standard_metadata_t standard_metadata,
                                 in bit<32> pres_amt_bytes, inout bit<32> delta){
     time_t obs_last_seen; time_t tel_insertion_window;
@@ -119,7 +120,8 @@ void update_telemetry_insertion_time(inout metadata meta, inout standard_metadat
             tel_insertion_window = min(max_t, (tel_insertion_window*alpha_1)>>alpha_2); // Increases time if bytes difference was smaller than expected
         }
 
-        update_deltas(meta, pres_amt_bytes, delta);
+        /* Updates the dynamic threshold (delta) */
+        update_delta(meta, pres_amt_bytes, delta);
 
         past_byte_cnt_reg.write(meta.flow_id, pres_amt_bytes);
         pres_byte_cnt_reg.write(meta.flow_id, 0);
@@ -129,7 +131,7 @@ void update_telemetry_insertion_time(inout metadata meta, inout standard_metadat
     }
 }
 
-
+/* Five tuple hash of src IP, src port, dst IP, dst port, and protocol. Indicates a flow */
 void five_tuple_hash(inout headers hdr, inout metadata meta){
     hash(meta.flow_id, 
     HashAlgorithm.crc16,
@@ -194,6 +196,7 @@ control MyIngress(inout headers hdr,
         if (hdr.ipv4.isValid()){
             ipv4_lpm.apply();
 
+            /* Evaluation is done only with UPD packets for simplicity */
             if(hdr.udp.isValid()){
                 five_tuple_hash(hdr, meta);
 
@@ -205,11 +208,11 @@ control MyIngress(inout headers hdr,
                 amt_packets = amt_packets+1;
                 packets_cnt_reg.write(meta.flow_id, amt_packets);
 
-                pres_byte_cnt_reg.read(total_amt_bytes, meta.flow_id);  // Used for update function
+                pres_byte_cnt_reg.read(total_amt_bytes, meta.flow_id);  // Used for the update function
                 total_amt_bytes = total_amt_bytes+standard_metadata.packet_length;
                 pres_byte_cnt_reg.write(meta.flow_id,  total_amt_bytes);
 
-                telemetry_byte_cnt_reg.read(tel_amt_bytes, meta.flow_id);   // Used for telemetry purpose
+                telemetry_byte_cnt_reg.read(tel_amt_bytes, meta.flow_id);   // Used for telemetry purposes
                 tel_amt_bytes = tel_amt_bytes+standard_metadata.packet_length;
                 telemetry_byte_cnt_reg.write(meta.flow_id,  tel_amt_bytes);
 
@@ -221,7 +224,7 @@ control MyIngress(inout headers hdr,
                     delta_reg.write(meta.flow_id, delta);
                 }
 
-                /** Observation window, updates gather window value*/
+                /* This is the observation window, where the tel_insertion_window value is updated*/
                 update_telemetry_insertion_time(meta, standard_metadata, total_amt_bytes, delta);
 
                 time_t previous_insertion; time_t tel_insertion_window;
@@ -234,6 +237,7 @@ control MyIngress(inout headers hdr,
                     previous_insertion_reg.write(meta.flow_id, now);
                 }
 
+                /* If the telemetry insertion has elapsed, save the timestamp of the previous and current insertion for the egress pipeline */
                 if(now - previous_insertion >= tel_insertion_window){
                     meta.insert_tel = 1;
 
@@ -242,7 +246,8 @@ control MyIngress(inout headers hdr,
                     previous_insertion_reg.write(meta.flow_id, now);
                 }
 
-
+                /* If there is a telemetry header or one will be added, check if this is the final switch before the final destination host
+                   In case it is, copy the packet to the egress pipeline, where the telemetry info is sent to the monitoring host */
                 if(hdr.telemetry.isValid() || meta.insert_tel == 1)
                     clone_I2E.apply();
             }
@@ -254,7 +259,8 @@ control MyIngress(inout headers hdr,
 ****************  E G R E S S   P R O C E S S I N G   *******************
 *************************************************************************/
 
-
+/* If necessary adds a telemtry header to a packet, otherwise this 
+   function adds a telemetry metadata header to a packet's telemetry metadata header stack */
 void insert_telemetry(inout headers hdr, inout metadata meta, in bit<32> tel_amt_bytes){
         if(!hdr.telemetry.isValid()){
             hdr.ethernet.ether_type = TYPE_TELEMETRY;
@@ -272,6 +278,7 @@ void insert_telemetry(inout headers hdr, inout metadata meta, in bit<32> tel_amt
             hdr.tel_data.push_front(1);
             hdr.tel_data[0].setValid();
 
+            /* First header stack? Yes? Bottom of Stack */
             if (hdr.telemetry.hop_cnt == 1)
                 hdr.tel_data[0].bos = 1;
             else
@@ -284,7 +291,7 @@ void insert_telemetry(inout headers hdr, inout metadata meta, in bit<32> tel_amt
                 hdr.tel_data[0].amt_bytes = tel_amt_bytes;
 
             hdr.tel_data[0].last_time = meta.last_time;
-            hdr.tel_data[0].curr_time = meta.curr_time; // (bit<64>)(now - previous_insertion);
+            hdr.tel_data[0].curr_time = meta.curr_time; 
 
             telemetry_byte_cnt_reg.write(meta.flow_id, 0);
         }
@@ -336,11 +343,12 @@ control MyEgress(inout headers hdr,
 
     apply{
         if(hdr.ipv4.isValid() && hdr.udp.isValid()){
-            sw_id.apply();
+            sw_id.apply(); // Get this switch's ID
 
             bit<32> tel_bytes;
             telemetry_byte_cnt_reg.read(tel_bytes, meta.flow_id);
 
+            /* Removes payload from cloned packet, adjusts IPv4 and UDP length fields, and send to the monitoring host */
             if(standard_metadata.instance_type == PKT_INSTANCE_TYPE_INGRESS_CLONE){
                 clone_lpm.apply();
 

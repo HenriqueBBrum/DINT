@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 
-# Runs the elephant_flow and microbursts detection applications and saves the classification performance and detection delay to a csv file
+# Runs the elephant flow or the microburst detection application and saves the confusion matrix and detection delay to a CSV file
 
 from math import sqrt, fabs, ceil, floor
 import csv
@@ -12,10 +12,8 @@ import pandas as pd
 import glob
 import ast
 
-
 sys.path.append("../python_utils")
 import constants
-
 
 
 def parse_args():
@@ -29,10 +27,10 @@ def parse_args():
 
 
 # The main actions are the following:
-# 1 - Converts the .pcapng collected by the monitored switch during the experiments duration to a CSV format
+# 1 - Converts the .pcapng collected by the monitored switch during the duration of the experiment to a CSV format
 # 2 - Determines which flows were elephant or microbursts
-# 3 - Retrives the elephant flows or microbursts as informed by the monitiring algorithm using in-band network telemtry
-# 4 - Compares both results and save the metrics to a csv file
+# 3 - Retrieves the elephant flows or microbursts as informed by the monitoring algorithm using in-band network telemetry
+# 4 - Compares both results and save the metrics to a CSV file
 def main(args):
     pcapng_files = glob.glob(constants.TRAFFIC_DATA_FOLDER+"*.pcapng")
     for f in pcapng_files:
@@ -93,7 +91,8 @@ def find_real_anomalous_flows(experiment_type, throughput_threshold, duration_th
 
     return real_anomalous_flows, amt_flows
 
-# Read the information about the anomalous flows as detected by the host running the node_communication/receive.py script
+
+# Reads the information about the anomalous flows as detected by the host running the node_communication/receive.py script
 def get_telemetry_anomalous_flows(experiment_type):
     tel_anomalous_flows_files = glob.glob(constants.TRAFFIC_DATA_FOLDER+"*"+experiment_type+"_flows.csv")
     tel_anomalous_flows = {}
@@ -112,6 +111,7 @@ def get_telemetry_anomalous_flows(experiment_type):
               
 
     return tel_anomalous_flows
+
 
 # Calculates the confusion matrix, the NMRSE of the throughput and the detection delay for the elephant flow or microburst detection application
 def anomalous_flows_stats(real_anomalous_flows, tel_anomalous_flows, amt_real_flows, duration_threshold):
@@ -133,7 +133,7 @@ def anomalous_flows_stats(real_anomalous_flows, tel_anomalous_flows, amt_real_fl
 
 
         confusion_matrix[switch_type] = {"TP": true_positives,"FP": false_positives, "FN":  false_negatives, "TN": true_negatives} 
-        print(confusion_matrix)                                            
+
         real_anom_flows_throughput = []
         tel_anom_flows_throughput = []
         tel_anom_flows_delay = []
@@ -151,7 +151,6 @@ def anomalous_flows_stats(real_anomalous_flows, tel_anomalous_flows, amt_real_fl
             throughput_nrmse[switch_type] = rmse
 
         avg_delay[switch_type] = sum(tel_anom_flows_delay)/(len(tel_anom_flows_delay) if len(tel_anom_flows_delay) >= 1 else 1)
-
     return confusion_matrix, throughput_nrmse, avg_delay
 
 
@@ -167,14 +166,11 @@ def save_anomalous_flows_stats(args, confusion_matrix, throughput_nrmse, avg_del
         if (not file_exists):
             writer.writeheader()  # file doesn't exist yet, write a header
 
-
         for switch_type, matrix in confusion_matrix.items():
             print(matrix)
             writer.writerow({'switch_type': switch_type, 'switch_id':args['switch_id'], 'min_telemetry_push_time': args['min_telemetry_push_time'], 
                                  'experiment_time': args['experiment_duration'], 'TP': matrix['TP'], 'FP': matrix['FP'], 'FN': matrix['FN'],
                                  'TN': matrix['TN'],  'throughput_nrmse': throughput_nrmse[switch_type], 'avg_delay':avg_delay[switch_type]})
-
-
 
 
 if __name__ == '__main__':
