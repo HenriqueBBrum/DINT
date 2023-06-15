@@ -16,7 +16,7 @@
 #define UDP_LEN 8 // Size (B) of a UDP header
 
 
-#define COPY_INDEX 0 // Used to copy metadata from a original packet to a cloned packet 
+#define COPY_INDEX 0 // Used to copy metadata from a original packet to a cloned packet
 #define REPORT_MIRROR_SESSION_ID 500 // Session for mirrored packets
 
 
@@ -89,6 +89,7 @@ header udp_t {
 struct metadata {
     @field_list(COPY_INDEX)
     bit<1> insert_tel;
+
     bit<1> cloned;
     bit<7> sw_id;
 
@@ -108,5 +109,3 @@ struct headers {
     ipv4_t       ipv4;
     udp_t        udp;
 }
-
-

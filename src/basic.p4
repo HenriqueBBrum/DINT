@@ -12,6 +12,8 @@
 **************  I N G R E S S   P R O C E S S I N G   *******************
 *************************************************************************/
 
+
+
 control MyIngress(inout headers hdr,
                   inout metadata meta,
                   inout standard_metadata_t standard_metadata) {
@@ -40,10 +42,28 @@ control MyIngress(inout headers hdr,
         default_action = drop();
     }
 
+    action five_tuple_hash(){
+        hash(meta.flow_id,
+        HashAlgorithm.crc16,
+        (bit<16>)0,
+        {
+            hdr.ipv4.src_addr,
+            hdr.udp.src_port,
+            hdr.ipv4.dst_addr,
+            hdr.udp.dst_port,
+            hdr.ipv4.protocol
+        },
+        (bit<16>)0XFFFF
+        );
+    }
+
     apply {
-        if (hdr.ipv4.isValid()){
-            ipv4_lpm.apply();
-        }
+      if (hdr.ipv4.isValid()){
+          ipv4_lpm.apply();
+          if(hdr.udp.isValid()){
+              five_tuple_hash();
+          }
+      }
     }
 }
 
@@ -55,6 +75,7 @@ control MyIngress(inout headers hdr,
 control MyEgress(inout headers hdr,
                  inout metadata meta,
                  inout standard_metadata_t standard_metadata) {
+    apply{}
 }
 
 

@@ -8,8 +8,8 @@
 
 /***************************************************************/
 
-const bit<48> tel_insertion_min_window = 100000;
-const bit<48> obs_window = 100000; // 1 Seg = 1000000 microseg
+const bit<48> tel_insertion_min_window = 1000000;
+const bit<48> obs_window = 1000000; // 1 Seg = 1000000 microseg
 const bit<48> max_t = 5000000;
 
 const bit<48> alpha_1 = 9;
@@ -66,10 +66,10 @@ time_t min(in time_t v1, in time_t v2){
 
 
 /* Updates the dynamic threshold according to the SIMPLE MOVING AVERAGE function of the last k measured throughputs */
-void update_delta(inout metadata meta, in bit<32> comparator, inout bit<32> delta){
+void update_delta(inout bit<32> flow_id, in bit<32> comparator, inout bit<32> delta){
     bit<32> ct; bit<32> sum;
-    count_reg.read(ct, meta.flow_id);
-    n_last_values_reg.read(sum, meta.flow_id);
+    count_reg.read(ct, flow_id);
+    n_last_values_reg.read(sum, flow_id);
 
     if(ct==k){
         bit<32> mean; bit<32> old_m;
@@ -77,39 +77,39 @@ void update_delta(inout metadata meta, in bit<32> comparator, inout bit<32> delt
 
         delta = (bit<32>)((div*(bit<64>)mean)>>32);
 
-        delta_reg.write(meta.flow_id, delta);
+        delta_reg.write(flow_id, delta);
         sum = 0;
         ct = 0;
     }
 
     sum = sum + comparator; ct = ct + 1;
 
-    n_last_values_reg.write(meta.flow_id, sum);
-    count_reg.write(meta.flow_id, ct);
+    n_last_values_reg.write(flow_id, sum);
+    count_reg.write(flow_id, ct);
 }
 
 
 
-/* Updates the telemetry insertion period according by comparing the 
+/* Updates the telemetry insertion period according by comparing the
    the difference in bytes between the current and previous observation window with a dynamic threshold (delta)  */
-void update_telemetry_insertion_time(inout metadata meta, inout standard_metadata_t standard_metadata,
+void update_telemetry_insertion_time(inout bit<32> flow_id, inout standard_metadata_t standard_metadata,
                                 in bit<32> pres_amt_bytes, inout bit<32> delta){
     time_t obs_last_seen; time_t tel_insertion_window;
 
-    obs_last_seen_reg.read(obs_last_seen, meta.flow_id);
-    tel_insertion_window_reg.read(tel_insertion_window, meta.flow_id);
+    obs_last_seen_reg.read(obs_last_seen, flow_id);
+    tel_insertion_window_reg.read(tel_insertion_window, flow_id);
     if(tel_insertion_window == 0){
         tel_insertion_window = tel_insertion_min_window;
-        tel_insertion_window_reg.write(meta.flow_id, tel_insertion_window);
+        tel_insertion_window_reg.write(flow_id, tel_insertion_window);
     }
 
     bit<32> past_amt_bytes;
-    past_byte_cnt_reg.read(past_amt_bytes, meta.flow_id);
+    past_byte_cnt_reg.read(past_amt_bytes, flow_id);
 
     time_t now = standard_metadata.ingress_global_timestamp;
     if(obs_last_seen == 0){
         obs_last_seen = now;
-        obs_last_seen_reg.write(meta.flow_id, now);
+        obs_last_seen_reg.write(flow_id, now);
     }
 
     if(now - obs_last_seen >= obs_window){
@@ -121,31 +121,16 @@ void update_telemetry_insertion_time(inout metadata meta, inout standard_metadat
         }
 
         /* Updates the dynamic threshold (delta) */
-        update_delta(meta, pres_amt_bytes, delta);
+        update_delta(flow_id, pres_amt_bytes, delta);
 
-        past_byte_cnt_reg.write(meta.flow_id, pres_amt_bytes);
-        pres_byte_cnt_reg.write(meta.flow_id, 0);
+        past_byte_cnt_reg.write(flow_id, pres_amt_bytes);
+        pres_byte_cnt_reg.write(flow_id, 0);
 
-        tel_insertion_window_reg.write(meta.flow_id, tel_insertion_window);
-        obs_last_seen_reg.write(meta.flow_id, now);
+        tel_insertion_window_reg.write(flow_id, tel_insertion_window);
+        obs_last_seen_reg.write(flow_id, now);
     }
 }
 
-/* Five tuple hash of src IP, src port, dst IP, dst port, and protocol. Indicates a flow */
-void five_tuple_hash(inout headers hdr, inout metadata meta){
-    hash(meta.flow_id, 
-    HashAlgorithm.crc16,
-    (bit<16>)0,
-    {
-        hdr.ipv4.src_addr,
-        hdr.udp.src_port,
-        hdr.ipv4.dst_addr,
-        hdr.udp.dst_port,
-        hdr.ipv4.protocol
-    },
-    (bit<16>)0XFFFF
-    );
-}
 
 control MyIngress(inout headers hdr,
                   inout metadata meta,
@@ -175,7 +160,6 @@ control MyIngress(inout headers hdr,
         default_action = drop();
     }
 
-
     action clone_pkt() {
         meta.cloned = 1;
         clone_preserving_field_list(CloneType.I2E, REPORT_MIRROR_SESSION_ID, COPY_INDEX);
@@ -192,13 +176,30 @@ control MyIngress(inout headers hdr,
         size = 1024;
     }
 
+
+    /* Five tuple hash of src IP, src port, dst IP, dst port, and protocol. Indicates a flow */
+    action five_tuple_hash(){
+        hash(meta.flow_id,
+        HashAlgorithm.crc16,
+        (bit<16>)0,
+        {
+            hdr.ipv4.src_addr,
+            hdr.udp.src_port,
+            hdr.ipv4.dst_addr,
+            hdr.udp.dst_port,
+            hdr.ipv4.protocol
+        },
+        (bit<16>)0XFFFF
+        );
+    }
+
     apply{
         if (hdr.ipv4.isValid()){
             ipv4_lpm.apply();
 
             /* Evaluation is done only with UPD packets for simplicity */
             if(hdr.udp.isValid()){
-                five_tuple_hash(hdr, meta);
+                five_tuple_hash();
 
                 bit<32> amt_packets;
                 bit<32> tel_amt_bytes;
@@ -218,14 +219,13 @@ control MyIngress(inout headers hdr,
 
                 bit<32> delta = 0;
                 delta_reg.read(delta, meta.flow_id);
-
                 if(delta == 0){
                     delta = base_delta;
                     delta_reg.write(meta.flow_id, delta);
                 }
 
                 /* This is the observation window, where the tel_insertion_window value is updated*/
-                update_telemetry_insertion_time(meta, standard_metadata, total_amt_bytes, delta);
+                update_telemetry_insertion_time(meta.flow_id, standard_metadata, total_amt_bytes, delta);
 
                 time_t previous_insertion; time_t tel_insertion_window;
                 previous_insertion_reg.read(previous_insertion, meta.flow_id);
@@ -259,7 +259,7 @@ control MyIngress(inout headers hdr,
 ****************  E G R E S S   P R O C E S S I N G   *******************
 *************************************************************************/
 
-/* If necessary adds a telemtry header to a packet, otherwise this 
+/* If necessary adds a telemtry header to a packet, otherwise this
    function adds a telemetry metadata header to a packet's telemetry metadata header stack */
 void insert_telemetry(inout headers hdr, inout metadata meta, in bit<32> tel_amt_bytes){
         if(!hdr.telemetry.isValid()){
@@ -291,7 +291,7 @@ void insert_telemetry(inout headers hdr, inout metadata meta, in bit<32> tel_amt
                 hdr.tel_data[0].amt_bytes = tel_amt_bytes;
 
             hdr.tel_data[0].last_time = meta.last_time;
-            hdr.tel_data[0].curr_time = meta.curr_time; 
+            hdr.tel_data[0].curr_time = meta.curr_time;
 
             telemetry_byte_cnt_reg.write(meta.flow_id, 0);
         }
@@ -372,7 +372,7 @@ control MyEgress(inout headers hdr,
                     hdr.ethernet.ether_type = TYPE_IPV4;
                 }
             }
-                
+
         }
     }
 }

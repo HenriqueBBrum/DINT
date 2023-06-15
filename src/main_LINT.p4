@@ -11,7 +11,7 @@
 const bit<8> alpha = 1; // Equals to 2^-1
 const bit<8> delta = 6; // Equals to 2^-1
 
-const bit<48> obs_window = 100000; // 1 Seg = 1000000 microseg
+const bit<48> obs_window = 1000000; // 1 Seg = 1000000 microseg
 
 
 
@@ -21,7 +21,7 @@ const bit<48> obs_window = 100000; // 1 Seg = 1000000 microseg
 
 
 register<bit<32>>(MAX_FLOWS) pres_byte_cnt_reg; // Check if it neede to report
-register<bit<32>>(MAX_FLOWS) telemetry_byte_cnt_reg; // Used to save byte count information to telemetry header (changes every tel_insertion_min_window) 
+register<bit<32>>(MAX_FLOWS) telemetry_byte_cnt_reg; // Used to save byte count information to telemetry header (changes every tel_insertion_min_window)
 register<bit<32>>(MAX_FLOWS) packets_cnt_reg;
 
 register<time_t>(MAX_FLOWS) previous_insertion_reg;
@@ -39,7 +39,7 @@ register<bit<32>>(MAX_FLOWS) past_reported_obs_reg;
 
 
 /* Checks if a metric should be added to a packet */
-bit<1> report_metrics(inout metadata meta, in bit<32> pres_amt_bytes){
+bit<1> report_metrics(inout bit<32> flow_id, in bit<32> pres_amt_bytes){
 
     bit<1> report = 0;
 
@@ -49,10 +49,10 @@ bit<1> report_metrics(inout metadata meta, in bit<32> pres_amt_bytes){
     bit<32> past_reported_obs;
 
 
-    past_device_obs_reg.read(past_device_obs, meta.flow_id);
-    past_reported_obs_reg.read(past_reported_obs, meta.flow_id);
+    past_device_obs_reg.read(past_device_obs, flow_id);
+    past_reported_obs_reg.read(past_reported_obs, flow_id);
 
-    int<32> latest_device_obs = (current_obs - ((int<32>)past_device_obs))>>alpha; 
+    int<32> latest_device_obs = (current_obs - ((int<32>)past_device_obs))>>alpha;
     latest_device_obs = latest_device_obs + (int<32>)past_device_obs;
     if(past_device_obs == 0){
         latest_device_obs = current_obs;
@@ -67,30 +67,17 @@ bit<1> report_metrics(inout metadata meta, in bit<32> pres_amt_bytes){
         if(past_reported_obs == 0){
             latest_reported_obs = current_obs;
         }
-        past_reported_obs_reg.write(meta.flow_id, (bit<32>)latest_reported_obs);
+        past_reported_obs_reg.write(flow_id, (bit<32>)latest_reported_obs);
     }
 
-    past_device_obs_reg.write(meta.flow_id, (bit<32>)latest_device_obs);
+    past_device_obs_reg.write(flow_id, (bit<32>)latest_device_obs);
 
     return report;
 }
 
 
 
-void five_tuple_hash(inout headers hdr, inout metadata meta){
-    hash(meta.flow_id, 
-    HashAlgorithm.crc16,
-    (bit<16>)0,
-    {
-        hdr.ipv4.src_addr,
-        hdr.udp.src_port,
-        hdr.ipv4.dst_addr,
-        hdr.udp.dst_port,
-        hdr.ipv4.protocol
-    },
-    (bit<16>)0XFFFF
-    );
-}
+
 
 control MyIngress(inout headers hdr,
                   inout metadata meta,
@@ -136,11 +123,27 @@ control MyIngress(inout headers hdr,
         size = 1024;
     }
 
+
+    action five_tuple_hash(){
+        hash(meta.flow_id,
+        HashAlgorithm.crc16,
+        (bit<16>)0,
+        {
+            hdr.ipv4.src_addr,
+            hdr.udp.src_port,
+            hdr.ipv4.dst_addr,
+            hdr.udp.dst_port,
+            hdr.ipv4.protocol
+        },
+        (bit<16>)0XFFFF
+        );
+    }
+
     apply {
         if (hdr.ipv4.isValid()){
             ipv4_lpm.apply();
             if(hdr.udp.isValid()){
-                five_tuple_hash(hdr, meta);
+                five_tuple_hash();
 
                 bit<32> amt_packets;
                 bit<32> amt_bytes;
@@ -168,9 +171,8 @@ control MyIngress(inout headers hdr,
                     previous_insertion_reg.write(meta.flow_id, now);
                 }
 
-
                 if(now - previous_insertion >= obs_window){
-                    bit<1> report = report_metrics(meta, amt_bytes);
+                    bit<1> report = report_metrics(meta.flow_id, amt_bytes);
 
                     if(report == 1){
                         meta.insert_tel = 1;
@@ -183,8 +185,7 @@ control MyIngress(inout headers hdr,
                     pres_byte_cnt_reg.write(meta.flow_id, 0);
                 }
 
-                
-                clone_I2E.apply();    
+                clone_I2E.apply();
             }
         }
     }
@@ -279,7 +280,7 @@ control MyEgress(inout headers hdr,
         apply{
             if(hdr.ipv4.isValid() && hdr.udp.isValid()){
 
-                
+
                 sw_id.apply();
 
                 bit<32> tel_bytes;
@@ -308,7 +309,7 @@ control MyEgress(inout headers hdr,
                         hdr.ethernet.ether_type = TYPE_IPV4;
                     }
                 }
-                
+
             }
         }
 }

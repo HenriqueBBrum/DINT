@@ -390,7 +390,7 @@ class P4_Simulation:
                 sleep(0.25)
 
         sleep(self.test['time'])
-        
+
 
 
 def get_args():

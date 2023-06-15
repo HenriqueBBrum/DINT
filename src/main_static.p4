@@ -6,7 +6,7 @@
 #include "include/parsers.p4"
 #include "include/checksum.p4"
 
-const bit<48> tel_insertion_window = 100000; // 1 Seg = 1000000 microseg
+const bit<48> tel_insertion_window = 1000000; // 1 Seg = 1000000 microseg
 
 
 /*************************************************************************
@@ -23,21 +23,6 @@ register<time_t>(MAX_FLOWS) previous_insertion_reg;
 /*************************************************************************
 **************  I N G R E S S   P R O C E S S I N G   *******************
 *************************************************************************/
-
-void five_tuple_hash(inout headers hdr, inout metadata meta){
-    hash(meta.flow_id, 
-    HashAlgorithm.crc16,
-    (bit<16>)0,
-    {
-        hdr.ipv4.src_addr,
-        hdr.udp.src_port,
-        hdr.ipv4.dst_addr,
-        hdr.udp.dst_port,
-        hdr.ipv4.protocol
-    },
-    (bit<16>)0XFFFF
-    );
-}
 
 
 control MyIngress(inout headers hdr,
@@ -84,12 +69,27 @@ control MyIngress(inout headers hdr,
         size = 1024;
     }
 
+
+    action five_tuple_hash(){
+        hash(meta.flow_id,
+        HashAlgorithm.crc16,
+        (bit<16>)0,
+        {
+            hdr.ipv4.src_addr,
+            hdr.udp.src_port,
+            hdr.ipv4.dst_addr,
+            hdr.udp.dst_port,
+            hdr.ipv4.protocol
+        },
+        (bit<16>)0XFFFF
+        );
+    }
+
     apply {
         if (hdr.ipv4.isValid()){
             ipv4_lpm.apply();
             if(hdr.udp.isValid()){
-
-                five_tuple_hash(hdr, meta);
+                five_tuple_hash();
 
                 bit<32> amt_packets;
                 bit<32> amt_bytes;
@@ -119,7 +119,6 @@ control MyIngress(inout headers hdr,
                     previous_insertion_reg.write(meta.flow_id, now);
                 }
 
-
                 if(hdr.telemetry.isValid() || meta.insert_tel == 1)
                     clone_I2E.apply();
             }
@@ -145,7 +144,7 @@ void insert_telemetry(inout headers hdr, inout metadata meta, in bit<32> pres_am
 
         if(hdr.telemetry.hop_cnt < MAX_HOPS){
             hdr.telemetry.hop_cnt = hdr.telemetry.hop_cnt + 1;
-            
+
             hdr.tel_data.push_front(1);
             hdr.tel_data[0].setValid();
 
@@ -215,7 +214,6 @@ control MyEgress(inout headers hdr,
 
 
     apply{
-
         if(hdr.ipv4.isValid() && hdr.udp.isValid()){
             sw_id.apply();
 
@@ -244,7 +242,7 @@ control MyEgress(inout headers hdr,
                     hdr.tel_data.pop_front(MAX_HOPS);
                     hdr.ethernet.ether_type = TYPE_IPV4;
                 }
-            }  
+            }
         }
     }
 }
