@@ -28,7 +28,7 @@ Even though you can execute P4 programs and get the resulting files just with th
 pip install matplotlib numpy pandas scapy
 ```
 
-### Improved BMv2 software switch performance
+### Improve the BMv2 software switch performance
 
 The default BMv2 switch (`simple_switch_grpc` for this project) that comes with the P4 VM has low performance because it uses a log system. To fully replicate our results, you need to use the performance-improved BMv2; otherwise, the default `simple_swtich_grpc` executable from the VM won't be able to process our workload.
 
@@ -49,21 +49,25 @@ Install the dependencies and required libraries:
 sudo apt-get  install libreadline-dev
 ```
 
-Now, configure the software switch without the log system to improve the performance:
+> :warning: Increase the virtual machine's processing capacity (memory and CPU) otherwise it might crash for the next step
+
+Now, configure the software switch without the log system to improve the performance (this step takes some time so be patient):
 ```
 ./autogen.sh
-./configure 'CXXFLAGS=-g -O3' 'CFLAGS=-g -O3' --with-thrift --disable-logging-macros --disable-blogger
-make j8
+
+./configure 'CXXFLAGS=-g -O3' 'CFLAGS=-g -O3' --with-thrift --with-pi --disable-logging-macros --disable-elogger
+
+make
 ```
 
-Finally, install the software switch. This will create three different software switches executables: the `simple_switch,` `simple_switch_grpc`, and the `psa_switch.` This project uses the `simple_switch_grpc.`
+Finally, install the software switch. This will create three software switch executables: the `simple_switch,` `simple_switch_grpc`, and the `psa_switch.` This project uses the `simple_switch_grpc`.
 
 ```
 sudo make install
 sudo ldconfig
 ```
 
-To change from the improved software switch used in this project, go to the *src* folder and open the Makefile. Change the **BMV2_SWITCH_EXE** value from */home/p4/hevaviroal-model/target/simple_switch_grpc/simple_switch_grpc* to *simple_switch_grpc*.
+To change from the improved software switch used in this project to the unoptimized version, go to the *src* folder and open the Makefile with a text editor. Change the **BMV2_SWITCH_EXE** value from */home/p4/hevaviroal-model/target/simple_switch_grpc/simple_switch_grpc* to *simple_switch_grpc*.
 
 That's it; now you can start reproducing the experiments!
 
@@ -138,22 +142,22 @@ To create your workload, the first thing is to understand how our paper's worklo
 
 ### Generate the desired traffic
 
-Initially, we defined our desired workload for the **elephant_mice** and **microbursts** experiments. Check the **flows.txt** files in the `experiment_traffic_generator/elephant_mice` and `experiment_traffic_generator/microbursts` folders. These files are used to define the experiments workload. They have the following format:
+Initially, we defined our desired workload for the **elephant_mice** and **microbursts** experiments. Check the **flows.txt** files in the `testing/experiment_traffic_generator/elephant_mice` and `testing/experiment_traffic_generator/microbursts` folders. These files are used to define the experiments workload. They have the following format:
 
 - **First line**: 		The type of the experiment, elephant_mice or microbursts;
-- **Second line**: 		The destination IP;
+- **Second line**: 		The destination IPv4 address;
 - **Third line**: 		The number of hosts sending the desired workload;
 - **Fourth line**: 		The experiment's total time;
 - **Final N lines**: 	The subsequent N lines describe the workload from each one of the hosts with the following format:
                     `<amt_flows> <totalbytes_gen_func> <gen_func_parameters> <duration_gen_func> <gen_func_parameters>, ...`. Each line (host) can have multiple flow-generating  strategies, each separated by a comma (,).
 
 
-These text files were input to the `experiment_traffic_generator/generate_eval_traffic.py` script, and the information about each experiment flow was created (bandwidth and duration). The output of the **generate_eval_traffic.py** script is text files (one for each host informed) containing the information about each flow, where each line (flow) has the following format:
+These text files were input to the `testing/experiment_traffic_generator/generate_eval_traffic.py` script, and the information about each experiment flow was created (bandwidth and duration). The output of the **generate_eval_traffic.py** script is text files (one for each host informed) containing the information about each flow, where each line (flow) has the following format:
 			`<destination_IP> <flow_bandwidth> <flow_duration> <flow_starting_time>`
 
-Check the **\*traffic.txt** files in the `experiment_traffic_generator/elephant_mice` and `experiment_traffic_generator/microbursts` folders to understand the generated information about each flow. Finally, the **node_communication/send.py** script was used to send the desired traffic.
+Check the **h\*traffic.txt** files in the `testing/experiment_traffic_generator/elephant_mice` and `testing/experiment_traffic_generator/microbursts` folders to understand the generated information about each flow. Finally, the **testing/node_communication/send.py** script was used to send the desired traffic.
 
-You can start creating your workload now that you understand how our traffic was generated. First, remove the existing files in the `experiment_traffic_generator/elephant_mice` and `experiment_traffic_generator/microbursts` folders. Then, read the `experiment_traffic_generator/generate_eval_traffic.py` code documentation to understand how to define your workload; after that, create your **flows.txt** file; finally, run the **generate_eval_traffic.py** to create the workload for each one of your hosts.
+You can start creating your workload now that you understand how our traffic was generated. First, remove the existing files in the `testing/experiment_traffic_generator/elephant_mice` and `testing/experiment_traffic_generator/microbursts` folders. Then, read the `testing/experiment_traffic_generator/generate_eval_traffic.py` code documentation to understand how to define your workload; after that, create your **flows.txt** file; finally, run the **generate_eval_traffic.py** to create the workload for each one of your hosts.
 
 For example, if you wanted an *elephant_mice* workload where there are three hosts (h1, h2, and h3 by default) sending packets to host 10.0.4.4 for 50 seconds, and each host sends ten flows with random bandwidth between 0.5 and 1 Mbps for 8 seconds you would have a **flows.txt** like this:
 
@@ -172,12 +176,14 @@ Then, to generate the actual traffic for the **node_communication/send.py** scri
 python3 generate_eval_traffic.py -c elephant_mice/flows.txt -o elephant_mice/
 ```
 
+Check the `elephant_mice`folder for the resulting files.
+
 With these steps, you have the necessary knowledge to run the **send.py** script with your workload.  Go to the next section to understand how to test your workload with the three INT algorithms.
 
 
 ### Run the same workload for all experiments
 
-With the previous steps, you generated your workload. However, to not depend on Python, Scapy, and the *send.py* function, we will use the tcpreplay to capture one round of your traffic to be repeated in all future experiments. To this end, we will run your workload **one-time** with the **basic.p4** switch and capture it with tcpreplay.
+With the previous steps, you generated your workload. However, to not depend on Python, Scapy, and the *send.py* function, we will use the *tcpreplay* tool to capture one round of your traffic to be repeated in all future experiments. To this end, we will run your workload **one-time** with the **basic.p4** switch and capture it with *tcpreplay*.
 
 First, go to the **experiment_config/** folder and open the **get_tcpreplay_pcap.json** file with a text editor. Change the value of the **time** parameter to the one you provided when generating your workload plus five seconds to account for the setup time. Also, change each device's `duration:<time>` entry to reflect the new experiment's duration.
 
@@ -197,4 +203,4 @@ Now, it is time to build the **basic.p4** switch, use the **get_tcpreplay_pcap.j
 make clean && make P4_SRC=basic.p4 TEST_JSON=../testing/experiment_config/get_tcpreplay_pcap.json
 ```
 
-After that, change back the **TOPO** in the *src/Makefile* to `topologies/mesh/topology.json`. The resulting PCAPNG files will be in either the **elephant_mice** or **microbursts** folder in the **experimnet_traffic_generagtor/** directory. With all these steps done, you can try DINT and the other algorithms using your workload. Follow the steps in the [Reproduce paper evaluation](#Reproduce-paper-evaluation) section for this.
+After that, change back the **TOPO** in the *src/Makefile* to `topologies/mesh/topology.json`. The resulting PCAPNG files will be in either the **elephant_mice** or **microbursts** folder in the **experiment_traffic_generator/** directory. With all these steps done, you can try DINT and the other algorithms using your workload. Follow the steps in the [Reproduce paper evaluation](#Reproduce-paper-evaluation) section for this.
