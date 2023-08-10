@@ -1,8 +1,9 @@
 # Providing Fine-grained Network Metrics for Monitoring Applications using In-band Telemetry
 
 This repository contains the code and instructions needed to reproduce the experiments for the paper [Providing Fine-grained Network Metrics for
-Monitoring Applications using In-band Telemetry]().
+Monitoring Applications using In-band Telemetry](https://ieeexplore.ieee.org/document/10175472/).
 
+> To check our paper's final results go to our Google Drive folder with the [NetSoft 2023 results](https://drive.google.com/drive/folders/14hhirZpIgI2-LsnEub-rUIznKYLPIxZN?usp=drive_link)
 
 ## Installation Guide
 
@@ -11,8 +12,7 @@ Before reading this tutorial, follow the instructions in the section "**Obtainin
 ```
 git clone -b micro --single-branch https://github.com/HenriqueBBrum/DINT.git
 ```
-
-> To check our paper's final results go to our Google Drive folder with the [NetSoft 2023 results](https://drive.google.com/drive/folders/14hhirZpIgI2-LsnEub-rUIznKYLPIxZN?usp=drive_link)
+>  :warning: Clone this repo directly into the **\~/Documents folder** since this code uses hardcoded paths.
 
 Then, install *tcpreplay*:
 
