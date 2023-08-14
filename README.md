@@ -75,7 +75,7 @@ That's it; now you can start reproducing the experiments!
 ## Reproduce paper evaluation
 
 To reproduce the experiments performed in our paper [Providing Fine-grained Network Metrics for
-Monitoring Applications using In-band Telemetry](), start by downloading our [Google Drive folder](https://drive.google.com/drive/folders/1HRkH4al5L0zLIjNbyue1A147HcwH5JTM?usp=sharing) containing the experiments traffic. Extract the files from the ZIP folder and move the *.pcapng* files with the **elephant_mice** string to the `DINT/testing/experiment_traffic_generator/elephant_mice` and the ones with the **microbursts** string to the `DINT/testing/experiment_traffic_generator/microbursts`
+Monitoring Applications using In-band Telemetry](https://ieeexplore.ieee.org/document/10175472/), start by downloading our [Google Drive folder](https://drive.google.com/drive/folders/1HRkH4al5L0zLIjNbyue1A147HcwH5JTM?usp=sharing) containing the experiments traffic. Extract the files from the ZIP folder and move the *.pcapng* files with the **elephant_mice** string to the `DINT/testing/experiment_traffic_generator/elephant_mice` and the ones with the **microbursts** string to the `DINT/testing/experiment_traffic_generator/microbursts`
 
 ```
 unzip -d ~/Downloads/ ~/Downloads/DINT_NetSoft_Workload-*.zip
