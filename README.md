@@ -54,15 +54,26 @@ sudo apt-get  install libreadline-dev
 Now, configure the software switch without the log system to improve the performance (**this step takes some time**, so be patient):
 ```
 ./autogen.sh
-
 ./configure 'CXXFLAGS=-g -O3' 'CFLAGS=-g -O3' --with-thrift --with-pi --disable-logging-macros --disable-elogger
+```
 
+Finally, install the software switch. 
+```
 make
+sudo make install
+sudo ldconfig
+```
+This will create two software switch executables: the `simple_switch` and the `psa_switch`, but not the `simple_switch_grpc` that is needed for this project. To install the `simple_switch_grpc` target, go to the `simple_switch_grpc` folder
+
+```
+cd targets/simple_switch_grpc
 ```
 
-Finally, install the software switch. This will create three software switch executables: the `simple_switch,` `simple_switch_grpc`, and the `psa_switch.` This project uses the `simple_switch_grpc`.
+Next, run the following commands:
 
 ```
+./configure --with-thrift 'CXXFLAGS=-O0 -g'
+make
 sudo make install
 sudo ldconfig
 ```
