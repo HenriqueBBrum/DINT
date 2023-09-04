@@ -35,6 +35,7 @@ The default BMv2 switch (`simple_switch_grpc` for this project) that comes with 
 First, clone the behavioral model repository from the official GitHub:
 
 ```
+cd Documents
 git clone https://github.com/p4lang/behavioral-model.git
 ```
 
@@ -78,7 +79,7 @@ sudo make install
 sudo ldconfig
 ```
 
-To change from the improved software switch used in this project to the unoptimized version, go to the *src* folder and open the Makefile with a text editor. Change the **BMV2_SWITCH_EXE** value from `/home/p4/behavioral-model/target/simple_switch_grpc/simple_switch_grpc` to `simple_switch_grpc`. However, be aware that with this switch version you won't be able to reproduce our experiments.
+To change from the improved software switch used in this project to the unoptimized version, go to the *src* folder and open the Makefile with a text editor. Change the **BMV2_SWITCH_EXE** value from `/home/p4/Documents/behavioral-model/target/simple_switch_grpc/simple_switch_grpc` to `simple_switch_grpc`. However, be aware that with this switch version you won't be able to reproduce our experiments.
 
 That's it; now you can start reproducing the experiments!
 
