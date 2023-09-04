@@ -63,7 +63,7 @@ make
 sudo make install
 sudo ldconfig
 ```
-This will create two software switch executables: the `simple_switch` and the `psa_switch`, but not the `simple_switch_grpc` that is needed for this project. To install the `simple_switch_grpc` target, go to the `simple_switch_grpc` folder
+:warning: This will create two software switch executables: the `simple_switch` and the `psa_switch`, but not the `simple_switch_grpc` that is needed for this project. To install the `simple_switch_grpc` target, go to the `simple_switch_grpc` folder
 
 ```
 cd targets/simple_switch_grpc
